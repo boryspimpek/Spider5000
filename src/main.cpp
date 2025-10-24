@@ -74,10 +74,9 @@ struct ServoMapping {
 };
 
 struct GaitParams {
-    float x_amps[4];        // LF, RF, LR, RR
+    float x_amps[4];
     float z_amps[4];
     float x_offsets[4];
-    float z_offsets[4];
     float phase_offsets[4];
 };
 
@@ -98,7 +97,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {x_amp, -x_amp, x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 - OFFSET_BACK, 90 + OFFSET_BACK},
-        {90-h, 90+h, 90+h, 90-h},
         {0.00, 0.50, 0.25, 0.75}
     },
     // CREEP_BACKWARD
@@ -106,7 +104,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {-x_amp, x_amp, -x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {90 + OFFSET_BACK, 90 - OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
-        {90-h, 90+h, 90+h, 90-h},
         {0.25, 0.75, 0.00, 0.50}
     },
     // CREEP_RIGHT
@@ -114,7 +111,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {x_amp, x_amp, x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {135-x_amp/2, 45-x_amp/2, 45-x_amp/2, 135-x_amp/2},
-        {90-h, 90+h, 90+h, 90-h},
         {0.00, 0.50, 0.25, 0.75}
     },
     // CREEP_LEFT
@@ -122,7 +118,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {-x_amp, -x_amp, -x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {135+x_amp/2, 45+x_amp/2, 45+x_amp/2, 135+x_amp/2},
-        {90-h, 90+h, 90+h, 90-h},
         {0.00, 0.50, 0.25, 0.75}
     },
     // CREEP_TROT_FORWARD
@@ -130,7 +125,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {x_amp, -x_amp, x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {135-x_amp/2, 45+x_amp/2, 45-x_amp/2, 135+x_amp/2},
-        {90-h, 90+h, 90+h, 90-h},
         {0.50, 0.00, 0.00, 0.50}
     },
     // CREEP_TROT_BACKWARD
@@ -138,7 +132,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {-x_amp, x_amp, -x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {135+x_amp/2, 45-x_amp/2, 45-x_amp/2, 135-x_amp/2},
-        {90-h, 90+h, 90+h, 90-h},
         {0.50, 0.00, 0.00, 0.50}
     },
     // CREEP_TROT_RIGHT
@@ -146,7 +139,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {-x_amp, -x_amp, -x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {135+x_amp/2, 45+x_amp/2, 45+x_amp/2, 135+x_amp/2},
-        {90-h, 90+h, 90+h, 90-h},
         {0.50, 0.00, 0.00, 0.50}
     },
     // CREEP_TROT_LEFT
@@ -154,7 +146,6 @@ const GaitParams GAIT_CONFIGS[] = {
         {x_amp, x_amp, x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {135-x_amp/2, 45-x_amp/2, 45-x_amp/2, 135-x_amp/2},
-        {90-h, 90+h, 90+h, 90-h},
         {0.50, 0.00, 0.00, 0.50}
     }
 };
@@ -225,10 +216,13 @@ void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
     const GaitParams& params = GAIT_CONFIGS[mode];
     const char* legs[4] = {"lf", "rf", "lr", "rr"};
     
+    // Dynamiczne z_offsets based on current h value
+    float dynamic_z_offsets[4] = {90-h, 90+h, 90+h, 90-h};
+    
     for (int i = 0; i < 4; i++) {
         float current_phase = fmod(phase + params.phase_offsets[i], 1.0f);
         creep_gait(params.x_amps[i], params.z_amps[i], params.x_offsets[i], 
-                  params.z_offsets[i], current_phase, angles[i][1], angles[i][0]);
+                  dynamic_z_offsets[i], current_phase, angles[i][1], angles[i][0]);
     }
 }
 
@@ -322,7 +316,7 @@ void processButtons() {
     }
 
     if (h < 0) h = 0;
-    if (h > 0) h = 50;
+    if (h > 50) h = 50;
 
     last_circle = PS4.Circle();
     last_up = PS4.Up();
