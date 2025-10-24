@@ -138,7 +138,7 @@ void ConnectedText() {
   display.drawLine(0, 35, 128, 35, SSD1306_WHITE);
 
   display.display(); 
-  delay(5000); 
+  delay(1000); 
 
   logo();
 
