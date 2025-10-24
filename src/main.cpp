@@ -16,8 +16,6 @@ SMS_STS st;
 #define S_RXD 18
 #define S_TXD 19
 
-
-
 #define S_SCL 22
 #define S_SDA 21
 
