@@ -99,22 +99,68 @@ void return_to_neutral() {
     running = false;
 }
 
+const int MIN_ANGLE = 30;
+const int MAX_ANGLE = 140;
+
 void process_PS4_input() {
+    // Read and normalize stick values with deadzone
     float lx = (abs(PS4.LStickX()) < DEADZONE * 128) ? 0 : PS4.LStickX() / 128.0;
     float ly = (abs(PS4.LStickY()) < DEADZONE * 128) ? 0 : PS4.LStickY() / 128.0;    
+    float rx = (abs(PS4.RStickX()) < DEADZONE * 128) ? 0 : PS4.RStickX() / 128.0;
+    float ry = (abs(PS4.RStickY()) < DEADZONE * 128) ? 0 : PS4.RStickY() / 128.0;
 
-    if (ly > 0.5) {gait = CREEP_FORWARD; running = true; }
-    else if (ly < -0.5) {gait = CREEP_BACKWARD; running = true;}
-    else if (lx > 0.5) {gait = CREEP_RIGHT; running = true;}
-    else if (lx < -0.5) {gait = CREEP_LEFT; running = true;}
-    else {running = false; return_to_neutral();}
-    
-    if (running) {execute_gait_step(gait);}
+    bool leftStickActive = (abs(lx) > DEADZONE || abs(ly) > DEADZONE);
+    bool rightStickActive = (abs(rx) > DEADZONE || abs(ry) > DEADZONE);
+
+    // Process left stick - movement
+    if (leftStickActive) {
+        running = true;
+        if (ly > 0.5) { 
+            gait = CREEP_FORWARD; 
+        } else if (ly < -0.5) { 
+            gait = CREEP_BACKWARD; 
+        } else if (lx > 0.5) { 
+            gait = CREEP_RIGHT; 
+        } else if (lx < -0.5) { 
+            gait = CREEP_LEFT; 
+        }
+        execute_gait_step(gait);
+    } else {
+        // Only stop running if right stick is also inactive
+        if (!rightStickActive) {
+            running = false;
+        }
+    }
+
+    // Process right stick - height and tilt adjustment
+    if (rightStickActive) {
+        int baseAngle2 = 90 - h;  // Front-left
+        int baseAngle4 = 90 + h;  // Front-right  
+        int baseAngle6 = 90 + h;  // Rear-left
+        int baseAngle8 = 90 - h;  // Rear-right
+        
+        int maxDeviation = 50;
+        
+        // Calculate tilt offsets - jedna strona w górę, druga w dół
+        int frontTilt = -ry * maxDeviation;  // UP: front down (-), DOWN: front up (+)
+        int rearTilt = ry * maxDeviation;    // UP: rear up (+), DOWN: rear down (-)
+        int leftTilt = -rx * maxDeviation;   // LEFT: left down (-), RIGHT: left up (+)
+        int rightTilt = rx * maxDeviation;   // LEFT: right up (+), RIGHT: right down (-)
+        
+        // Apply combined offsets - przeciwne ruchy dla przeciwległych nóg
+        move_servo_smooth(2, constrain(baseAngle2 + frontTilt + leftTilt, MIN_ANGLE, MAX_ANGLE));  // Front-left
+        move_servo_smooth(4, constrain(baseAngle4 - frontTilt - rightTilt, MIN_ANGLE, MAX_ANGLE)); // Front-right
+        move_servo_smooth(6, constrain(baseAngle6 - rearTilt - leftTilt, MIN_ANGLE, MAX_ANGLE));   // Rear-left  
+        move_servo_smooth(8, constrain(baseAngle8 + rearTilt + rightTilt, MIN_ANGLE, MAX_ANGLE));  // Rear-right
+        
+    } else if (!leftStickActive) {
+        return_to_neutral();
+    }
 }
 
 void processButtons() {
-    if (PS4.Up() && !last_up) {h += 5;}
-    if (PS4.Down() && !last_down) {h -= 5;}
+    if (PS4.Up() && !last_up) {h += 5; return_to_neutral();}
+    if (PS4.Down() && !last_down) {h -= 5; return_to_neutral();}
     if (h < 0) h = 0;
     if (h > 50) h = 50;
 
@@ -123,8 +169,6 @@ void processButtons() {
     if (t_cycle < 1.5) t_cycle = 1.5;
     if (t_cycle > 4.5) t_cycle = 4.5;
 
-    last_cross = PS4.Cross();
-    last_triangle = PS4.Triangle();
     last_up = PS4.Up();
     last_down = PS4.Down();
     last_left = PS4.Left();

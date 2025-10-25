@@ -11,7 +11,7 @@ const int sts_id[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 const int acc = 250;
 const int speed = 2400;
 
-const float DEADZONE = 0.1;
+const float DEADZONE = 0.2;
 
 const int SERVO_LIMITS[8][2] = {
     {75, 150},   // servo 1
@@ -55,4 +55,11 @@ void move_servo(int id, int angle_deg) {
     int pos = angle_deg_to_servo(safe_angle);
     int trimmed_pos = pos + SERVO_TRIMS[id-1];
     st.WritePosEx(id, trimmed_pos, speed, acc);
+}
+
+void move_servo_smooth(int id, int angle_deg) {
+    int safe_angle = check_angle_limit(id, angle_deg);
+    int pos = angle_deg_to_servo(safe_angle);
+    int trimmed_pos = pos + SERVO_TRIMS[id-1];
+    st.WritePosEx(id, trimmed_pos, 500, 50);
 }
