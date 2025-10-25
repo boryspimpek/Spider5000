@@ -9,9 +9,7 @@
 #include "servo.h"
 #include "gait.h"
 
-// ============================================================================
 // Pin Definitions
-// ============================================================================
 #define S_RXD 18
 #define S_TXD 19
 #define S_SCL 22
@@ -19,15 +17,8 @@
 #define RGB_LED 23
 #define NUMPIXELS 10
 
-// ============================================================================
-// Global Variables
-// ============================================================================
-
 // Gait control
 GaitMode gait = CREEP_FORWARD;
-bool running = false;
-unsigned long last_gait_time = 0;
-float gait_phase = 0.0;
 
 // Button states
 bool last_circle = false;
@@ -39,7 +30,6 @@ bool last_left = false;
 bool last_right = false;
 float h = 20;
 float t_cycle = 1.5;                          
-const unsigned long GAIT_DT = 50;           // 50ms = 0.05s
 
 void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
     const GaitParams& params = GAIT_CONFIGS[mode];

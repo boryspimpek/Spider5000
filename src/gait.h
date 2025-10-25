@@ -8,6 +8,12 @@ const int z_amp = 15;               // z amplitude
 const int OFFSET_FRONT = 5;         // front leg offset
 const int OFFSET_BACK = 45;         // back legs offset
 
+// Gait control
+const unsigned long GAIT_DT = 50;           // 50ms = 0.05s
+bool running = false;
+unsigned long last_gait_time = 0;
+float gait_phase = 0.0;
+
 enum GaitMode {
     CREEP_FORWARD,
     CREEP_BACKWARD,
