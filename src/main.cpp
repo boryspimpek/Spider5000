@@ -4,9 +4,10 @@
 
 #include <Arduino.h>
 #include <math.h>
-#include <SCServo.h>
 #include <PS4Controller.h>
 #include "board.h" // OLED display functions
+#include "servo.h"
+#include "gait.h"
 
 // ============================================================================
 // Pin Definitions
@@ -19,226 +20,50 @@
 #define NUMPIXELS 10
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-// Servo settings
-const int sts_id[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-const int acc = 250;
-const int speed = 2400;
-
-// Gait parameters
-float h = 20;                    // height
-const int x_amp = 30;               // x amplitude
-const int z_amp = 15;               // z amplitude
-const int OFFSET_FRONT = 5;         // front leg offset
-const int OFFSET_BACK = 45;         // back legs offset
-
-const float DEADZONE = 0.1;
-const unsigned long GAIT_DT = 50;   // 50ms = 0.05s
-
-// Servo limits and calibration
-const int SERVO_LIMITS[8][2] = {
-    {75, 150},   // servo 1
-    {30, 140},   // servo 2
-    {30, 105},   // servo 3
-    {40, 150},   // servo 4
-    {30, 105},   // servo 5
-    {40, 150},   // servo 6
-    {85, 150},   // servo 7
-    {30, 140}    // servo 8
-};
-
-const int SERVO_TRIMS[8] = {100, 60, 140, 55, 0, 10, 0, 40};
-const int NEUTRAL_ANGLES[8] = {100, 90, 80, 90, 60, 90, 120, 90};
-
-// ============================================================================
-// Type Definitions
-// ============================================================================
-
-enum GaitMode {
-    CREEP_FORWARD,
-    CREEP_BACKWARD,
-    CREEP_RIGHT,
-    CREEP_LEFT,
-    CREEP_TROT_FORWARD,
-    CREEP_TROT_BACKWARD,
-    CREEP_TROT_RIGHT,
-    CREEP_TROT_LEFT
-};
-
-struct ServoMapping {
-    int servo_id;
-    const char* leg;
-    const char* axis;
-};
-
-struct GaitParams {
-    float x_amps[4];
-    float z_amps[4];
-    float x_offsets[4];
-    float phase_offsets[4];
-};
-
-// ============================================================================
-// Configuration Arrays
-// ============================================================================
-
-const ServoMapping SERVO_MAPPING[8] = {
-    {1, "lf", "x"}, {2, "lf", "z"},  // Servo 1: LF X, Servo 2: LF Z
-    {3, "rf", "x"}, {4, "rf", "z"},  // Servo 3: RF X, Servo 4: RF Z
-    {5, "lr", "x"}, {6, "lr", "z"},  // Servo 5: LR X, Servo 6: LR Z
-    {7, "rr", "x"}, {8, "rr", "z"}   // Servo 7: RR X, Servo 8: RR Z
-};
-
-const GaitParams GAIT_CONFIGS[] = {
-    // CREEP_FORWARD
-    {
-        {x_amp, -x_amp, x_amp, -x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 - OFFSET_BACK, 90 + OFFSET_BACK},
-        {0.00, 0.50, 0.25, 0.75}
-    },
-    // CREEP_BACKWARD
-    {
-        {-x_amp, x_amp, -x_amp, x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {90 + OFFSET_BACK, 90 - OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
-        {0.25, 0.75, 0.00, 0.50}
-    },
-    // CREEP_RIGHT
-    {
-        {x_amp, x_amp, x_amp, x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {135-x_amp/2, 45-x_amp/2, 45-x_amp/2, 135-x_amp/2},
-        {0.00, 0.50, 0.25, 0.75}
-    },
-    // CREEP_LEFT
-    {
-        {-x_amp, -x_amp, -x_amp, -x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {135+x_amp/2, 45+x_amp/2, 45+x_amp/2, 135+x_amp/2},
-        {0.00, 0.50, 0.25, 0.75}
-    },
-    // CREEP_TROT_FORWARD
-    {
-        {x_amp, -x_amp, x_amp, -x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {135-x_amp/2, 45+x_amp/2, 45-x_amp/2, 135+x_amp/2},
-        {0.50, 0.00, 0.00, 0.50}
-    },
-    // CREEP_TROT_BACKWARD
-    {
-        {-x_amp, x_amp, -x_amp, x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {135+x_amp/2, 45-x_amp/2, 45-x_amp/2, 135-x_amp/2},
-        {0.50, 0.00, 0.00, 0.50}
-    },
-    // CREEP_TROT_RIGHT
-    {
-        {-x_amp, -x_amp, -x_amp, -x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {135+x_amp/2, 45+x_amp/2, 45+x_amp/2, 135+x_amp/2},
-        {0.50, 0.00, 0.00, 0.50}
-    },
-    // CREEP_TROT_LEFT
-    {
-        {x_amp, x_amp, x_amp, x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {135-x_amp/2, 45-x_amp/2, 45-x_amp/2, 135-x_amp/2},
-        {0.50, 0.00, 0.00, 0.50}
-    }
-};
-
-// ============================================================================
 // Global Variables
 // ============================================================================
 
-// Servo control objects
-SMS_STS st;
-
 // Gait control
-GaitMode current_gait_mode = CREEP_FORWARD;
-bool is_gait_running = false;
+GaitMode gait = CREEP_FORWARD;
+bool running = false;
 unsigned long last_gait_time = 0;
 float gait_phase = 0.0;
 
 // Button states
 bool last_circle = false;
+bool last_triangle = false;
+bool last_cross = false;
 bool last_up = false;
 bool last_down = false;
-
-int angle_deg_to_servo(float deg) {
-    float rad = radians(deg);  // ° → rad
-    int center = 2048;
-    float scale = 2048.0 / PI;
-    return 4095 - (int)round(rad * scale + center);
-}
-
-int check_angle_limit(int id, int angle_deg) {
-    if (id < 1 || id > 8) return angle_deg;
-    
-    int min_angle = SERVO_LIMITS[id-1][0];
-    int max_angle = SERVO_LIMITS[id-1][1];
-    
-    if (angle_deg < min_angle) {
-        Serial.printf("Servo %d: kąt %d° poniżej minimum (%d°) — ograniczono.\n", id, angle_deg, min_angle);
-        angle_deg = min_angle;
-    } else if (angle_deg > max_angle) {
-        Serial.printf("Servo %d: kąt %d° powyżej maksimum (%d°) — ograniczono.\n", id, angle_deg, max_angle);
-        angle_deg = max_angle;
-    }
-    return angle_deg;
-}
-
-void move_servo(int id, int angle_deg) {
-    int safe_angle = check_angle_limit(id, angle_deg);
-    int pos = angle_deg_to_servo(safe_angle);
-    int trimmed_pos = pos + SERVO_TRIMS[id-1];
-    st.WritePosEx(id, trimmed_pos, speed, acc);
-}
-
-void creep_gait(float x_amp, float z_amp, float x_off, float z_off, float phase, float& z, float& x) {
-    // LIFT (0-25% cyklu)
-    if (phase < 0.25f) {
-        z = z_off + z_amp * sin(phase / 0.25f * M_PI);
-        x = x_off + x_amp * sin(phase / 0.25f * M_PI / 2.0f);
-    }
-    // RETURN (25-100% cyklu) 
-    else {
-        z = z_off;  // noga na ziemi
-        float normalized_return_phase = (phase - 0.25f) / 0.75f;
-        x = x_off + x_amp * (1.0f - normalized_return_phase);  // liniowy powrót
-    }
-}
+bool last_left = false;
+bool last_right = false;
+float h = 20;
+float t_cycle = 1.5;                          
+const unsigned long GAIT_DT = 50;           // 50ms = 0.05s
 
 void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
     const GaitParams& params = GAIT_CONFIGS[mode];
     const char* legs[4] = {"lf", "rf", "lr", "rr"};
     
-    // Dynamiczne z_offsets based on current h value
+    // Dynamic z_offsets based on current h value
     float dynamic_z_offsets[4] = {90-h, 90+h, 90+h, 90-h};
     
     for (int i = 0; i < 4; i++) {
         float current_phase = fmod(phase + params.phase_offsets[i], 1.0f);
         creep_gait(params.x_amps[i], params.z_amps[i], params.x_offsets[i], 
-                  dynamic_z_offsets[i], current_phase, angles[i][1], angles[i][0]);
+                dynamic_z_offsets[i], current_phase, angles[i][1], angles[i][0]);
     }
 }
 
 void execute_gait_step(GaitMode mode) {
     unsigned long current_time = millis();
     if (current_time - last_gait_time < GAIT_DT) return;
-    
     last_gait_time = current_time;
-    
-    const float t_cycle = 2.0; // 2 second cycle
     gait_phase = fmod(gait_phase + (GAIT_DT / 1000.0) / t_cycle, 1.0);
-    
     float angles[4][2]; // [leg_index][0=x, 1=z]
+
     calculate_gait_angles(mode, gait_phase, angles);
-    
-    const int leg_to_index[4] = {0, 1, 2, 3}; // lf, rf, lr, rr
+    // const int leg_to_index[4] = {0, 1, 2, 3}; // lf, rf, lr, rr // do usunięcia ta linijka
     
     for (int i = 0; i < 8; i++) {
         const ServoMapping& mapping = SERVO_MAPPING[i];
@@ -259,68 +84,51 @@ void execute_gait_step(GaitMode mode) {
             move_servo(mapping.servo_id, (int)angle);
         }
     }
-    
-    // Serial.printf("Gait phase: %.2f\n", gait_phase);
 }
 
 void return_to_neutral() {
-    for (int i = 0; i < 8; i++) {
-        move_servo(i + 1, NEUTRAL_ANGLES[i]);
-    }
-    is_gait_running = false;
-    // Serial.println("Returned to neutral position");
+    move_servo(1, 100);     // servo 1
+    move_servo(2, 90 - h);  // servo 2
+    move_servo(3, 80);      // servo 3
+    move_servo(4, 90 + h);  // servo 4
+    move_servo(5, 60);      // servo 5
+    move_servo(6, 90 + h);  // servo 6
+    move_servo(7, 120);     // servo 7
+    move_servo(8, 90 - h);  // servo 8
+    
+    running = false;
 }
 
 void process_PS4_input() {
-    float lx = PS4.LStickX() / 128.0;
-    float ly = PS4.LStickY() / 128.0;
+    float lx = (abs(PS4.LStickX()) < DEADZONE * 128) ? 0 : PS4.LStickX() / 128.0;
+    float ly = (abs(PS4.LStickY()) < DEADZONE * 128) ? 0 : PS4.LStickY() / 128.0;    
+
+    if (ly > 0.5) {gait = CREEP_FORWARD; running = true; }
+    else if (ly < -0.5) {gait = CREEP_BACKWARD; running = true;}
+    else if (lx > 0.5) {gait = CREEP_RIGHT; running = true;}
+    else if (lx < -0.5) {gait = CREEP_LEFT; running = true;}
+    else {running = false; return_to_neutral();}
     
-    lx = (abs(lx) < DEADZONE) ? 0 : lx;
-    ly = (abs(ly) < DEADZONE) ? 0 : ly;
-    
-    if (ly > 0.5) {
-        current_gait_mode = CREEP_FORWARD;
-        is_gait_running = true;
-    } else if (ly < -0.5) {
-        current_gait_mode = CREEP_BACKWARD;
-        is_gait_running = true;
-    } else if (lx > 0.5) {
-        current_gait_mode = CREEP_RIGHT;
-        is_gait_running = true;
-    } else if (lx < -0.5) {
-        current_gait_mode = CREEP_LEFT;
-        is_gait_running = true;
-    } else {
-        is_gait_running = false;
-        return_to_neutral();
-    }
-    
-    if (is_gait_running) {
-        execute_gait_step(current_gait_mode);
-    }
+    if (running) {execute_gait_step(gait);}
 }
 
 void processButtons() {
-    if (PS4.Circle() && !last_circle) {
-        Serial.println("Circle pressed");
-    }
-    
-    if (PS4.Up() && !last_up) { 
-        h += 5;
-        Serial.printf("Height increased to: %d\n", h);
-    }
-    
-    if (PS4.Down() && !last_down) { 
-        h -= 5;
-        Serial.printf("Height decreased to: %d\n", h);
-    }
-
+    if (PS4.Up() && !last_up) {h += 5;}
+    if (PS4.Down() && !last_down) {h -= 5;}
     if (h < 0) h = 0;
     if (h > 50) h = 50;
 
-    last_circle = PS4.Circle();
+    if (PS4.Left() && !last_left) {t_cycle -= 1;}
+    if (PS4.Right() && !last_right) {t_cycle += 1;}
+    if (t_cycle < 1.5) t_cycle = 1.5;
+    if (t_cycle > 4.5) t_cycle = 4.5;
+
+    last_cross = PS4.Cross();
+    last_triangle = PS4.Triangle();
     last_up = PS4.Up();
     last_down = PS4.Down();
+    last_left = PS4.Left();
+    last_right = PS4.Right();
 }
 
 void onConnect() {
@@ -360,8 +168,8 @@ void loop() {
         processButtons();
     } else {
         // Stop gait if controller disconnects
-        if (is_gait_running) {
-            is_gait_running = false;
+        if (running) {
+            running = false;
             return_to_neutral();
         }
     }
