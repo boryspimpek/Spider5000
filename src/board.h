@@ -108,7 +108,7 @@ void displayResultsScreen() {
     display.println("No servos detected!");
   } else {
     display.setCursor(0, 16);
-    display.print("Servos: ");
+    display.print("S: ");
     for (int i = 0; i < MAX_SERVOS; i++) {
       if (servosFound[i]) {
         display.print(i+1);  // żeby ID zgadzało się z rzeczywistością

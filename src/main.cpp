@@ -28,8 +28,10 @@ bool last_up = false;
 bool last_down = false;
 bool last_left = false;
 bool last_right = false;
-float h = 20;
-float t_cycle = 1.5;                          
+
+// Gait parameters
+float h = 20;                       // Height
+float t_cycle = 1.5;                // Cycle time                         
 
 void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
     const GaitParams& params = GAIT_CONFIGS[mode];
