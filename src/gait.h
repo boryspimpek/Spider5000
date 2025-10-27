@@ -8,6 +8,10 @@ const int z_amp = 15;               // z amplitude
 const int OFFSET_FRONT = 0;         // front leg offset
 const int OFFSET_BACK = 45;         // back legs offset
 
+int maxDeviation = 50;              // Used in tilt mode
+float h = 20;                       // Height
+float t_cycle = 1.5;                // Cycle time                         
+
 // Gait control
 const unsigned long GAIT_DT = 50;           // 50ms = 0.05s
 bool running = false;

@@ -17,6 +17,8 @@
 #define RGB_LED 23
 #define NUMPIXELS 10
 
+
+
 // Gait control
 GaitMode gait = CREEP_FORWARD;
 
@@ -30,8 +32,6 @@ bool last_left = false;
 bool last_right = false;
 
 // Gait parameters
-float h = 20;                       // Height
-float t_cycle = 1.5;                // Cycle time                         
 
 void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
     const GaitParams& params = GAIT_CONFIGS[mode];
@@ -91,9 +91,6 @@ void return_to_neutral() {
     running = false;
 }
 
-const int MIN_ANGLE = 30;
-const int MAX_ANGLE = 140;
-
 void process_PS4_input() {
     // Read and normalize stick values with deadzone
     float lx = (abs(PS4.LStickX()) < DEADZONE * 128) ? 0 : PS4.LStickX() / 128.0;
@@ -128,8 +125,6 @@ void process_PS4_input() {
         int baseAngle6 = 90 + h;  // Rear-left
         int baseAngle8 = 90 - h;  // Rear-right
         
-        int maxDeviation = 50;
-        
         // Calculate tilt offsets - jedna strona w górę, druga w dół
         int frontTilt = -ry * maxDeviation;  // UP: front down (-), DOWN: front up (+)
         int rearTilt = ry * maxDeviation;    // UP: rear up (+), DOWN: rear down (-)
@@ -137,10 +132,10 @@ void process_PS4_input() {
         int rightTilt = rx * maxDeviation;   // LEFT: right up (+), RIGHT: right down (-)
         
         // Apply combined offsets - przeciwne ruchy dla przeciwległych nóg
-        move_servo_smooth(2, constrain(baseAngle2 + frontTilt + leftTilt, MIN_ANGLE, MAX_ANGLE));  // Front-left
-        move_servo_smooth(4, constrain(baseAngle4 - frontTilt - rightTilt, MIN_ANGLE, MAX_ANGLE)); // Front-right
-        move_servo_smooth(6, constrain(baseAngle6 - rearTilt - leftTilt, MIN_ANGLE, MAX_ANGLE));   // Rear-left  
-        move_servo_smooth(8, constrain(baseAngle8 + rearTilt + rightTilt, MIN_ANGLE, MAX_ANGLE));  // Rear-right
+        move_servo_smooth(2, (baseAngle2 + frontTilt + leftTilt));  // Front-left
+        move_servo_smooth(4, (baseAngle4 - frontTilt - rightTilt)); // Front-right
+        move_servo_smooth(6, (baseAngle6 - rearTilt - leftTilt));   // Rear-left  
+        move_servo_smooth(8, (baseAngle8 + rearTilt + rightTilt));  // Rear-right
         
     }  else {
         running = false;
