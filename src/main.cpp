@@ -47,7 +47,7 @@ void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
     }
 }
 
-void execute_gait_step(GaitMode mode) {
+void execute_gait(GaitMode mode) {
     unsigned long current_time = millis();
     if (current_time - last_gait_time < GAIT_DT) return;
     last_gait_time = current_time;
@@ -116,16 +116,13 @@ void process_PS4_input() {
         } else if (lx < -0.5) { 
             gait = CREEP_LEFT; 
         }
-        execute_gait_step(gait);
-    } else {
-        // Only stop running if right stick is also inactive
-        if (!rightStickActive) {
-            running = false;
-        }
-    }
+    } 
 
     // Process right stick - height and tilt adjustment
-    if (rightStickActive) {
+    else if (rightStickActive) {
+        running = false;  // Stop gait gdy używamy prawej gałki
+        gait_phase = 0.0;
+
         int baseAngle2 = 90 - h;  // Front-left
         int baseAngle4 = 90 + h;  // Front-right  
         int baseAngle6 = 90 + h;  // Rear-left
@@ -145,7 +142,9 @@ void process_PS4_input() {
         move_servo_smooth(6, constrain(baseAngle6 - rearTilt - leftTilt, MIN_ANGLE, MAX_ANGLE));   // Rear-left  
         move_servo_smooth(8, constrain(baseAngle8 + rearTilt + rightTilt, MIN_ANGLE, MAX_ANGLE));  // Rear-right
         
-    } else if (!leftStickActive) {
+    }  else {
+        running = false;
+        gait_phase = 0.0;
         return_to_neutral();
     }
 }
@@ -202,10 +201,16 @@ void loop() {
     if (PS4.isConnected()) {
         process_PS4_input();
         processButtons();
+        
+        // Tylko gait (automatyczny chód) - gdy lewa gałka aktywna
+        if (running) {
+            execute_gait(gait);
+        }
     } else {
-        // Stop gait if controller disconnects
+        // Kontroler rozłączony - zatrzymaj wszystko
         if (running) {
             running = false;
+            gait_phase = 0.0;
             return_to_neutral();
         }
     }

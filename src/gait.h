@@ -34,14 +34,15 @@ const GaitParams GAIT_CONFIGS[] = {
         {-x_amp, x_amp, -x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 + OFFSET_BACK, 90 - OFFSET_BACK},
-        {0.00, 0.50, 0.25, 0.75}
+        // {0.00, 0.50, 0.25, 0.75}
+        {0.75, 0.25, 0.00, 0.50}
     },
     // CREEP_BACKWARD
     {
         {x_amp, -x_amp, x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {90 - OFFSET_BACK, 90 + OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
-        {0.25, 0.75, 0.00, 0.50}
+        {0.50, 0.25, 0.00, 0.75}
     },
     // CREEP_RIGHT
     {
