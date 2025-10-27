@@ -5,7 +5,7 @@
 // Gait parameters
 const int x_amp = 30;               // x amplitude
 const int z_amp = 15;               // z amplitude
-const int OFFSET_FRONT = 5;         // front leg offset
+const int OFFSET_FRONT = 0;         // front leg offset
 const int OFFSET_BACK = 45;         // back legs offset
 
 // Gait control
@@ -31,30 +31,30 @@ struct GaitParams {
 const GaitParams GAIT_CONFIGS[] = {
     // CREEP_FORWARD
     {
-        {x_amp, -x_amp, x_amp, -x_amp},
+        {-x_amp, x_amp, -x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 - OFFSET_BACK, 90 + OFFSET_BACK},
+        {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 + OFFSET_BACK, 90 - OFFSET_BACK},
         {0.00, 0.50, 0.25, 0.75}
     },
     // CREEP_BACKWARD
     {
-        {-x_amp, x_amp, -x_amp, x_amp},
+        {x_amp, -x_amp, x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {90 + OFFSET_BACK, 90 - OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
+        {90 - OFFSET_BACK, 90 + OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
         {0.25, 0.75, 0.00, 0.50}
     },
     // CREEP_RIGHT
     {
-        {x_amp, x_amp, x_amp, x_amp},
+        {-x_amp, -x_amp, -x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {135-x_amp/2, 45-x_amp/2, 45-x_amp/2, 135-x_amp/2},
+        {45-x_amp/2, 135-x_amp/2, 135-x_amp/2, 45-x_amp/2},
         {0.00, 0.50, 0.25, 0.75}
     },
     // CREEP_LEFT
     {
-        {-x_amp, -x_amp, -x_amp, -x_amp},
+        {x_amp, x_amp, x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {135+x_amp/2, 45+x_amp/2, 45+x_amp/2, 135+x_amp/2},
+        {45+x_amp/2, 135+x_amp/2, 135+x_amp/2, 45+x_amp/2},
         {0.00, 0.50, 0.25, 0.75}
     }
 };

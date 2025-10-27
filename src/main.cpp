@@ -77,13 +77,13 @@ void execute_gait_step(GaitMode mode) {
 }
 
 void return_to_neutral() {
-    move_servo(1, 100);     // servo 1
+    move_servo(1, 45);     // servo 1
     move_servo(2, 90 - h);  // servo 2
-    move_servo(3, 80);      // servo 3
+    move_servo(3, 135);      // servo 3
     move_servo(4, 90 + h);  // servo 4
-    move_servo(5, 60);      // servo 5
+    move_servo(5, 135);      // servo 5
     move_servo(6, 90 + h);  // servo 6
-    move_servo(7, 120);     // servo 7
+    move_servo(7, 45);     // servo 7
     move_servo(8, 90 - h);  // servo 8
     
     running = false;

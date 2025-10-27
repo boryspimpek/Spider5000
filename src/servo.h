@@ -14,18 +14,17 @@ const int speed = 2400;
 const float DEADZONE = 0.2;
 
 const int SERVO_LIMITS[8][2] = {
-    {75, 150},   // servo 1
-    {30, 140},   // servo 2
-    {30, 105},   // servo 3
-    {40, 150},   // servo 4
-    {30, 105},   // servo 5
-    {40, 150},   // servo 6
-    {85, 150},   // servo 7
-    {30, 140}    // servo 8
+    {90, 180},      // servo 1
+    {30, 140},      // servo 2
+    {0, 90},        // servo 3
+    {40, 150},      // servo 4
+    {0, 90},        // servo 5
+    {40, 150},      // servo 6
+    {90, 180},      // servo 7
+    {30, 140}       // servo 8
 };
 
-const int SERVO_TRIMS[8] = {100, 60, 140, 55, 0, 10, 0, 40};
-const int NEUTRAL_ANGLES[8] = {100, 90, 80, 90, 60, 90, 120, 90};
+const int SERVO_TRIMS[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 int angle_deg_to_servo(float deg) {
     float rad = radians(deg);  // ° → rad
