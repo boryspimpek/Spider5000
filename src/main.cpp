@@ -247,28 +247,58 @@ void process_PS4_input() {
             break;
             
         case MODE_SQUARE:
-            if (rightStickActive) {
-                running = false;  // Stop gait gdy używamy prawej gałki
-                gait_phase = 0.0;
-
-                // Calculate tilt offsets - jedna strona w górę, druga w dół
-                int frontTilt = -ry_norm * maxDeviation;  // UP: front down (-), DOWN: front up (+)
-                int rearTilt = ry_norm * maxDeviation;    // UP: rear up (+), DOWN: rear down (-)
-                int leftTilt = -rx_norm * maxDeviation;   // LEFT: left down (-), RIGHT: left up (+)
-                int rightTilt = rx_norm * maxDeviation;   // LEFT: right up (+), RIGHT: right down (-)
-                
-                // Apply combined offsets - przeciwne ruchy dla przeciwległych nóg
-                move_servo_smooth(2, (90 - h + frontTilt + leftTilt));  // Front-left
-                move_servo_smooth(4, (90 + h - frontTilt - rightTilt)); // Front-right
-                move_servo_smooth(6, (90 + h - rearTilt - leftTilt));   // Rear-left  
-                move_servo_smooth(8, ( 90 - h + rearTilt + rightTilt));  // Rear-right    
-            } else {
+            // Wspólna inicjalizacja dla wszystkich warunków
+            if (leftStickActive || rightStickActive) {
                 running = false;
                 gait_phase = 0.0;
+            }
+
+            // Prawa gałka - sterowanie pochyleniem
+            if (rightStickActive) {
+                int front = -ry_norm * maxDeviation;
+                int rear = ry_norm * maxDeviation;
+                int left = rx_norm * maxDeviation;
+                int right = -rx_norm * maxDeviation;
+                
+                move_servo_smooth(2, (90 - h + front + left));
+                move_servo_smooth(4, (90 + h - front - right));
+                move_servo_smooth(6, (90 + h - rear - left));
+                move_servo_smooth(8, (90 - h + rear + right));
+            }
+
+            // Lewa gałka - sterowanie ruchem podstawowym
+            if (leftStickActive) {
+                int front = ly_norm * maxDeviation;  
+                int rear = -ly_norm * maxDeviation;    
+                int left = lx_norm * maxDeviation;   
+                int right = -lx_norm * maxDeviation;   
+                
+                move_servo_smooth(1, (45 + front + left));
+                move_servo_smooth(3, (135 - front - right));
+                move_servo_smooth(5, (135 - rear - left));
+                move_servo_smooth(7, (45 + rear + right));
+            }
+
+            // Regulacja wysokości
+            if (up) {
+                h += 5; 
+                if (h > 50) h = 50;
+                Serial.printf("Height increased to: %d\n", h);
+                return_to_neutral(); // Tylko raz po zmianie wysokości
+            }
+            if (down) {
+                h -= 5; 
+                if (h < 0) h = 0;
+                Serial.printf("Height decreased to: %d\n", h);
+                return_to_neutral(); // Tylko raz po zmianie wysokości
+            }
+
+            // Powrót do neutralnej tylko gdy żadna gałka nieaktywna
+            if (!leftStickActive && !rightStickActive && !up && !down) {
                 return_to_neutral();
-            }        
-                break;
-            
+            }
+            break;
+
         case MODE_CROSS:
             break;
             
