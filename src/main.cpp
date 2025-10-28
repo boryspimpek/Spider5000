@@ -4,22 +4,21 @@
 
 // Experimental version
 
+//main.cpp
 #include <Arduino.h>
 #include <math.h>
 #include <PS4Controller.h>
-#include "board.h" // OLED display functions
-#include "servo.h"
+#include "board.h"
+#include "servos.h"
 #include "gait.h"
+#include "variable.h"
 
-// Pin Definitions
 #define S_RXD 18
 #define S_TXD 19
 #define S_SCL 22
 #define S_SDA 21
 #define RGB_LED 23
 #define NUMPIXELS 10
-
-
 
 // Gait control
 GaitMode gait = CREEP_FORWARD;
@@ -35,63 +34,6 @@ bool last_right = false;
 
 // Gait parameters
 
-void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
-    const GaitParams& params = GAIT_CONFIGS[mode];
-    const char* legs[4] = {"lf", "rf", "lr", "rr"};
-    
-    // Dynamic z_offsets based on current h value
-    float dynamic_z_offsets[4] = {90-h, 90+h, 90+h, 90-h};
-    
-    for (int i = 0; i < 4; i++) {
-        float current_phase = fmod(phase + params.phase_offsets[i], 1.0f);
-        creep_gait(params.x_amps[i], params.z_amps[i], params.x_offsets[i], 
-                dynamic_z_offsets[i], current_phase, angles[i][1], angles[i][0]);
-    }
-}
-
-void execute_gait(GaitMode mode) {
-    unsigned long current_time = millis();
-    if (current_time - last_gait_time < GAIT_DT) return;
-    last_gait_time = current_time;
-    gait_phase = fmod(gait_phase + (GAIT_DT / 1000.0) / t_cycle, 1.0);
-    float angles[4][2]; // [leg_index][0=x, 1=z]
-
-    calculate_gait_angles(mode, gait_phase, angles);
-    // const int leg_to_index[4] = {0, 1, 2, 3}; // lf, rf, lr, rr // do usunięcia ta linijka
-    
-    for (int i = 0; i < 8; i++) {
-        const ServoMapping& mapping = SERVO_MAPPING[i];
-        int leg_index = -1;
-        
-        if (strcmp(mapping.leg, "lf") == 0) leg_index = 0;
-        else if (strcmp(mapping.leg, "rf") == 0) leg_index = 1;
-        else if (strcmp(mapping.leg, "lr") == 0) leg_index = 2;
-        else if (strcmp(mapping.leg, "rr") == 0) leg_index = 3;
-        
-        if (leg_index != -1) {
-            float angle = 0;
-            if (strcmp(mapping.axis, "x") == 0) {
-                angle = angles[leg_index][0];
-            } else if (strcmp(mapping.axis, "z") == 0) {
-                angle = angles[leg_index][1];
-            }
-            move_servo(mapping.servo_id, (int)angle);
-        }
-    }
-}
-
-void return_to_neutral() {
-    move_servo(1, 45);     // servo 1
-    move_servo(2, 90 - h);  // servo 2
-    move_servo(3, 135);      // servo 3
-    move_servo(4, 90 + h);  // servo 4
-    move_servo(5, 135);      // servo 5
-    move_servo(6, 90 + h);  // servo 6
-    move_servo(7, 45);     // servo 7
-    move_servo(8, 90 - h);  // servo 8
-    
-    running = false;
-}
 
 void process_PS4_input() {
     // Read and normalize stick values with deadzone

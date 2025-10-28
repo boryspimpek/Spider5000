@@ -1,17 +1,13 @@
-// servo.h
-
 #include <Arduino.h>
 #include <SCServo.h>
+#include "variable.h"
 
-// Servo control objects
+// Definicje zmiennych globalnych
 SMS_STS st;
 
-// Servo settings
 const int sts_id[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 const int acc = 250;
 const int speed = 2400;
-
-const float DEADZONE = 0.2;
 
 const int SERVO_TRIMS[8] = {-25, 15, 30, 0, -15, 0, -10, 45};
 
@@ -24,7 +20,7 @@ const int SERVO_LIMITS[8][2] = {
     {40, 150},              // servo 6
     {0, 90},                // servo 7
     {30, 140}               // servo 8
-};    
+};
 
 int angle_deg_to_servo(float deg) {
     float rad = radians(deg);  // ° → rad
@@ -61,4 +57,15 @@ void move_servo_smooth(int id, int angle_deg) {
     int pos = angle_deg_to_servo(safe_angle);
     int trimmed_pos = pos + SERVO_TRIMS[id-1];
     st.WritePosEx(id, trimmed_pos, 500, 50);
+}
+
+void return_to_neutral() {
+    move_servo(1, 45);     // servo 1
+    move_servo(2, 90 - h);  // servo 2
+    move_servo(3, 135);      // servo 3
+    move_servo(4, 90 + h);  // servo 4
+    move_servo(5, 135);      // servo 5
+    move_servo(6, 90 + h);  // servo 6
+    move_servo(7, 45);     // servo 7
+    move_servo(8, 90 - h);  // servo 8
 }
