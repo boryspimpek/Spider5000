@@ -1,6 +1,4 @@
 #include "gait.h"
-// #include "variable.h"
-// #include "servos.h"
 
 // Definicje zmiennych globalnych
 const unsigned long GAIT_DT = 50;
@@ -10,6 +8,30 @@ float gait_phase = 0.0;
 
 // Definicje stałych konfiguracji
 const GaitParams GAIT_CONFIGS[] = {
+    {
+        {-x_amp, x_amp, -x_amp, x_amp},
+        {z_amp, -z_amp, -z_amp, z_amp},
+        {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 + OFFSET_BACK, 90 - OFFSET_BACK},
+        {0.00, 0.50, 0.25, 0.75}
+    },
+    {
+        {x_amp, -x_amp, +x_amp, -x_amp},
+        {z_amp, -z_amp, -z_amp, z_amp},
+        {90 - OFFSET_BACK, 90 + OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
+        {0.25, 0.75, 0.00, 0.50}
+    },
+    {
+        {-x_amp, -x_amp, -x_amp, -x_amp},
+        {z_amp, -z_amp, -z_amp, z_amp},
+        {45 + x_amp / 2, 135 + x_amp / 2, 135 + x_amp / 2, 45 + x_amp / 2},
+        {0.00, 0.50, 0.25, 0.75}
+    },
+    {
+        {x_amp, x_amp, x_amp, x_amp},
+        {z_amp, -z_amp, -z_amp, z_amp},
+        {45 - x_amp / 2, 135 - x_amp / 2, 135 - x_amp / 2, 45 - x_amp / 2},
+        {0.00, 0.50, 0.25, 0.75}
+    },
     {
         {-x_amp, x_amp, -x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},

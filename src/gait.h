@@ -16,6 +16,10 @@ enum GaitMode {
     CREEP_BACKWARD,
     CREEP_RIGHT,
     CREEP_LEFT,
+    TROT_FORWARD,
+    TROT_BACKWARD,
+    TROT_LEFT,
+    TROT_RIGHT
 };
 
 // Parametry chodu
