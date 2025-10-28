@@ -2,6 +2,8 @@
 // to the PS4 controller using the Sixaxis pairing tool.
 // A0:DD:6C:85:54:9E 
 
+// Experimental version
+
 #include <Arduino.h>
 #include <math.h>
 #include <PS4Controller.h>
