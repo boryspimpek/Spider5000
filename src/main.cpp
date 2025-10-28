@@ -204,26 +204,16 @@ void process_PS4_input() {
                 else if (rx_norm < -0.5) gait = TROT_LEFT;
             }  
             else if (up) {
-                h += 5; 
+                h += 2; 
                 return_to_neutral(); 
                 if (h > 50) h = 50;
                 Serial.printf("Height increased to: %d\n", h);
             }
             else if (down) {
-                h -= 5; 
+                h -= 2; 
                 return_to_neutral(); 
                 if (h < 0) h = 0;
                 Serial.printf("Height decreased to: %d\n", h);
-            }
-            else if (left) {
-                t_cycle -= 1; 
-                if (t_cycle < 1.5) t_cycle = 1.5;
-                Serial.printf("Cycle time: %.1f\n", t_cycle);
-            }
-            else if (right) {
-                t_cycle += 1; 
-                if (t_cycle > 4.5) t_cycle = 4.5;
-                Serial.printf("Cycle time: %.1f\n", t_cycle);
             }
             else {
                 running = false; 
@@ -274,13 +264,13 @@ void process_PS4_input() {
 
             // Regulacja wysokości
             if (up) {
-                h += 5; 
+                h += 2; 
                 if (h > 50) h = 50;
                 Serial.printf("Height increased to: %d\n", h);
                 return_to_neutral(); // Tylko raz po zmianie wysokości
             }
             if (down) {
-                h -= 5; 
+                h -= 2; 
                 if (h < 0) h = 0;
                 Serial.printf("Height decreased to: %d\n", h);
                 return_to_neutral(); // Tylko raz po zmianie wysokości
