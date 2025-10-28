@@ -248,10 +248,10 @@ void process_PS4_input() {
 
             // Prawa gałka - sterowanie pochyleniem
             if (rightStickActive) {
-                int front = -ry_norm * maxDeviation;
-                int rear = ry_norm * maxDeviation;
-                int left = rx_norm * maxDeviation;
-                int right = -rx_norm * maxDeviation;
+                int front = ry_norm * maxDeviation;
+                int rear = -ry_norm * maxDeviation;
+                int left = -rx_norm * maxDeviation;
+                int right = rx_norm * maxDeviation;
                 
                 move_servo_smooth(2, (90 - h + front + left));
                 move_servo_smooth(4, (90 + h - front - right));
