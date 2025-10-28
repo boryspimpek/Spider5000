@@ -13,14 +13,6 @@
 #include "gait.h"
 #include "variable.h"
 
-#define S_RXD 18
-#define S_TXD 19
-#define S_SCL 22
-#define S_SDA 21
-#define RGB_LED 23
-#define NUMPIXELS 10
-
-GaitMode gait = CREEP_FORWARD;
 
 // Definicje głównych flag
 enum ModeFlag {
@@ -44,15 +36,11 @@ enum TriangleSubMode {
 // Globalne zmienne
 ModeFlag currentMode = MODE_DEFAULT;
 TriangleSubMode triangleSubMode = SUBMODE_A;
+GaitMode gait = CREEP_FORWARD;
 bool buttonsActive = true;
 unsigned long lastModeChange = 0;
 const unsigned long MODE_CHANGE_DELAY = 300; // ms
 
-// Deklaracje funkcji
-void processInput();
-void processButtons();
-void handleMainModeChange(ModeFlag newMode);
-void handleTriangleSubModeChange(bool moveRight);
 
 void handleMainModeChange(ModeFlag newMode) {
     unsigned long currentTime = millis();
@@ -151,7 +139,12 @@ void processTriangleSubModes(int lx, int ly, int rx, int ry,
 
 void process_PS4_input() {
     if (!PS4.isConnected()) return;
-    
+
+    // Globalne akcje przycisków (działają zawsze)
+    if (PS4.Share()) {
+        ShowVoltage();  
+    }
+
     // Odczyt wartości gałek z poprawną deadzone
     int lx_raw = PS4.LStickX();
     int ly_raw = PS4.LStickY();
