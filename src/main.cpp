@@ -26,21 +26,94 @@ enum ModeFlag {
 
 // Definicje podtrybów dla trybu TRIANGLE
 enum TriangleSubMode {
-    SUBMODE_A = 0,
-    SUBMODE_B,
-    SUBMODE_C,
-    SUBMODE_D,
-    SUBMODE_COUNT
+    SUBMODE_TA = 0,
+    SUBMODE_TB,
+    SUBMODE_TC,
+    SUBMODE_TD,
+    SUBMODE_COUNT_T
+};
+
+// Definicje podtrybów dla trybu DEFAULT
+enum DefaultSubMode {
+    SUBMODE_DA = 0,
+    SUBMODE_DB,
+    SUBMODE_DC,
+    SUBMODE_DD,
+    SUBMODE_COUNT_D
 };
 
 // Globalne zmienne
 ModeFlag currentMode = MODE_DEFAULT;
-TriangleSubMode triangleSubMode = SUBMODE_A;
-GaitMode gait = CREEP_FORWARD;
+TriangleSubMode triangleSubMode = SUBMODE_TA;
+DefaultSubMode defaultSubMode = SUBMODE_DA;
+
+GaitMode gaitDA = TROT_FORWARD;
+GaitMode gaitDB = CREEP_FORWARD;
+
+
 bool buttonsActive = true;
 unsigned long lastModeChange = 0;
 const unsigned long MODE_CHANGE_DELAY = 300; // ms
 
+struct ControllerData {
+    // Surowe wartości gałek
+    int lx_raw, ly_raw, rx_raw, ry_raw;
+    
+    // Wartości po deadzone
+    int lx, ly, rx, ry;
+    
+    // Znormalizowane wartości
+    float lx_norm, ly_norm, rx_norm, ry_norm;
+    
+    // Przyciski
+    bool r1, r2, up, down, left, right;
+    
+    // Wartości analogowe
+    int r2Value, l2Value;
+    
+    // Flagi aktywności
+    bool leftStickActive, rightStickActive;
+};    
+
+ControllerData read_PS4_input() {
+    ControllerData data;
+    
+    // Odczyt wartości gałek z poprawną deadzone
+    data.lx_raw = PS4.LStickX();
+    data.ly_raw = PS4.LStickY();
+    data.rx_raw = PS4.RStickX();
+    data.ry_raw = PS4.RStickY();
+    
+    // Apply deadzone
+    data.lx = (abs(data.lx_raw) < DEADZONE * 128) ? 0 : data.lx_raw;
+    data.ly = (abs(data.ly_raw) < DEADZONE * 128) ? 0 : data.ly_raw;
+    data.rx = (abs(data.rx_raw) < DEADZONE * 128) ? 0 : data.rx_raw;
+    data.ry = (abs(data.ry_raw) < DEADZONE * 128) ? 0 : data.ry_raw;
+    
+    // Normalizacja
+    data.lx_norm = data.lx / 128.0;
+    data.ly_norm = data.ly / 128.0;
+    data.rx_norm = data.rx / 128.0;
+    data.ry_norm = data.ry / 128.0;
+    
+    // Odczyt przycisków R1, R2, strzałek
+    data.r1 = PS4.R1();
+    data.r2 = PS4.R2();
+    data.up = PS4.Up();
+    data.down = PS4.Down();
+    data.left = PS4.Left();
+    data.right = PS4.Right();
+    
+    // Wartość analogowa dla R2/L2
+    data.r2Value = PS4.R2Value();
+    data.l2Value = PS4.L2Value();
+    
+    // Flagi aktywności gałek
+    data.leftStickActive = (abs(data.lx) > 0 || abs(data.ly) > 0);
+    data.rightStickActive = (abs(data.rx) > 0 || abs(data.ry) > 0);
+    
+    return data;
+}
 
 void handleMainModeChange(ModeFlag newMode) {
     unsigned long currentTime = millis();
@@ -54,7 +127,10 @@ void handleMainModeChange(ModeFlag newMode) {
         
         // Reset podtrybu gdy zmieniamy główny tryb
         if (currentMode != MODE_TRIANGLE) {
-            triangleSubMode = SUBMODE_A;
+            triangleSubMode = SUBMODE_TA;
+        }
+        else if (currentMode != MODE_TRIANGLE) {
+            defaultSubMode = SUBMODE_DA;
         }
         
         buttonsActive = true;
@@ -67,10 +143,10 @@ void handleTriangleSubModeChange(bool moveRight) {
     if (buttonsActive && (currentTime - lastModeChange) > MODE_CHANGE_DELAY) {
         if (moveRight) {
             // Zmiana w prawo (R1)
-            triangleSubMode = (TriangleSubMode)((triangleSubMode + 1) % SUBMODE_COUNT);
+            triangleSubMode = (TriangleSubMode)((triangleSubMode + 1) % SUBMODE_COUNT_T);
         } else {
             // Zmiana w lewo (L1)
-            triangleSubMode = (TriangleSubMode)((triangleSubMode - 1 + SUBMODE_COUNT) % SUBMODE_COUNT);
+            triangleSubMode = (TriangleSubMode)((triangleSubMode - 1 + SUBMODE_COUNT_T) % SUBMODE_COUNT_T);
         }
         
         buttonsActive = false;
@@ -80,54 +156,55 @@ void handleTriangleSubModeChange(bool moveRight) {
     }
 }
 
-void processTriangleSubModes(int lx, int ly, int rx, int ry,
-                            bool up, bool down, bool left, bool right, 
-                            bool r1, bool r2, int r2Value, int l2Value) {
+void handleDefaultSubModeChange(bool moveRight) {
+    unsigned long currentTime = millis();
+    
+    if (buttonsActive && (currentTime - lastModeChange) > MODE_CHANGE_DELAY) {
+        if (moveRight) {
+            // Zmiana w prawo (R1)
+            defaultSubMode = (DefaultSubMode)((defaultSubMode + 1) % SUBMODE_COUNT_D);
+        } else {
+            // Zmiana w lewo (L1)
+            defaultSubMode = (DefaultSubMode)((defaultSubMode - 1 + SUBMODE_COUNT_D) % SUBMODE_COUNT_D);
+        }
+        
+        buttonsActive = false;
+        lastModeChange = currentTime;
+        
+        buttonsActive = true;
+    }
+}
+
+void processTriangleSubModes(ControllerData data) {
     
     switch(triangleSubMode) {
-        case SUBMODE_A:
+        case SUBMODE_TA:
             // Podtryb A - podstawowe funkcje
-            if (abs(lx) > 10) {
-                Serial.printf("Triangle-A - Left X: %d\n", lx);
+            if (abs(data.lx) > 10) {
+                Serial.printf("Triangle-A");
             }
-            if (up) Serial.println("Triangle-A - UP: Move forward");
-            if (down) Serial.println("Triangle-A - DOWN: Move backward");
             break;
             
-        case SUBMODE_B:
+        case SUBMODE_TB:
             // Podtryb B - zaawansowane ruchy
-            if (abs(ry) > 10) {
-                Serial.printf("Triangle-B - Right Y: %d (Camera)\n", ry);
-            }
-            if (r2Value > 20) {
-                Serial.printf("Triangle-B - R2: %d (Throttle)\n", r2Value);
+            if (abs(data.ry) > 10) {
+                Serial.printf("Triangle-B");
             }
             break;
             
-        case SUBMODE_C:
+        case SUBMODE_TC:
             // Podtryb C - kombinacje
-            if (left && r1) {
-                Serial.println("Triangle-C - LEFT+R1: Quick turn left");
-            }
-            if (right && r1) {
-                Serial.println("Triangle-C - RIGHT+R1: Quick turn right");
-            }
-            if (abs(ly) > 30) {
-                Serial.printf("Triangle-C - Speed: %d\n", ly);
+            if (data.left && data.r1) {
+                Serial.println("Triangle-C");
             }
             break;
             
-        case SUBMODE_D:
+        case SUBMODE_TD:
             // Podtryb D - precyzyjne sterowanie
-            if (abs(lx) > 2) {
-                Serial.printf("Triangle-D - Precise X: %d\n", lx);
+            if (abs(data.lx) > 2) {
+                Serial.printf("Triangle-D");
             }
-            if (abs(ly) > 2) {
-                Serial.printf("Triangle-D - Precise Y: %d\n", ly);
-            }
-            if (l2Value > 10) {
-                Serial.printf("Triangle-D - Brake: %d\n", l2Value);
-            }
+            
             break;
     }
     
@@ -137,79 +214,63 @@ void processTriangleSubModes(int lx, int ly, int rx, int ry,
     }
 }
 
-void process_PS4_input() {
-    if (!PS4.isConnected()) return;
-
-    // Globalne akcje przycisków (działają zawsze)
-    if (PS4.Share()) {
-        ShowVoltage();  
-    }
-
-    // Odczyt wartości gałek z poprawną deadzone
-    int lx_raw = PS4.LStickX();
-    int ly_raw = PS4.LStickY();
-    int rx_raw = PS4.RStickX();
-    int ry_raw = PS4.RStickY();
+void processDefaultSubModes(ControllerData data) {
     
-    // Apply deadzone
-    int lx = (abs(lx_raw) < DEADZONE * 128) ? 0 : lx_raw;
-    int ly = (abs(ly_raw) < DEADZONE * 128) ? 0 : ly_raw;
-    int rx = (abs(rx_raw) < DEADZONE * 128) ? 0 : rx_raw;
-    int ry = (abs(ry_raw) < DEADZONE * 128) ? 0 : ry_raw;
-    
-    // Normalizacja
-    float lx_norm = lx / 128.0;
-    float ly_norm = ly / 128.0;
-    float rx_norm = rx / 128.0;
-    float ry_norm = ry / 128.0;
-    
-    bool leftStickActive = (abs(lx) > 0 || abs(ly) > 0);
-    bool rightStickActive = (abs(rx) > 0 || abs(ry) > 0);
-
-    // Odczyt przycisków R1, R2, strzałek
-    bool r1 = PS4.R1();
-    bool r2 = PS4.R2();
-    bool up = PS4.Up();
-    bool down = PS4.Down();
-    bool left = PS4.Left();
-    bool right = PS4.Right();
-
-    // Wartość analogowa dla R2/L2 (0-255)
-    int r2Value = PS4.R2Value();
-    int l2Value = PS4.L2Value();
-
-    // DEBUG: Wyświetl wartości dla testów
-    static unsigned long lastDebug = 0;
-    if (millis() - lastDebug > 500) {
-        Serial.printf("LX: %d, LY: %d, RX: %d, RY: %d\n", lx, ly, rx, ry);
-        Serial.printf("Up: %d, Down: %d, Left: %d, Right: %d\n", up, down, left, right);
-        lastDebug = millis();
-    }
-
-    // Główne tryby
-    switch(currentMode) {
-        case MODE_DEFAULT:
-            if (leftStickActive) {
+    switch(defaultSubMode) {
+        case SUBMODE_DA:
+            if (data.leftStickActive) {
                 running = true;
-                if (ly_norm > 0.5) gait = CREEP_FORWARD;
-                else if (ly_norm < -0.5) gait = CREEP_BACKWARD;
-                else if (lx_norm > 0.5) gait = CREEP_RIGHT;
-                else if (lx_norm < -0.5) gait = CREEP_LEFT;
-            }      
-            else if (rightStickActive) {
+                if (data.ly_norm > 0.5) gaitDA = TROT_FORWARD;
+                else if (data.ly_norm < -0.5) gaitDA = TROT_BACKWARD;
+                else if (data.lx_norm > 0.5) gaitDA = TROT_RIGHT;
+                else if (data.lx_norm < -0.5) gaitDA = TROT_LEFT;
+            }
+            else if (data.up) {
+                h += 2; 
+                return_to_neutral(); 
+                if (h > 50) h = 50;
+                Serial.print(h);
+            }
+            else if (data.down) {
+                h -= 2; 
+                return_to_neutral(); 
+                if (h < 0) h = 0;
+                Serial.print(h);
+            }
+            else if (data.left) {
+                x_amp += 2; 
+                return_to_neutral(); 
+                if (x_amp > 30) x_amp = 30;
+                Serial.print(x_amp);
+            }
+            else if (data.right) {
+                x_amp -= 2; 
+                return_to_neutral(); 
+                if (x_amp < 15) x_amp = 15;
+                Serial.print(x_amp);
+            }
+            else {
+                running = false; 
+                gait_phase = 0.0; 
+                return_to_neutral();
+            }     
+            break;
+            
+        case SUBMODE_DB:
+            if (data.leftStickActive) {
                 running = true;
-                if (ry_norm > 0.5) gait = TROT_FORWARD;
-                else if (ry_norm < -0.5) gait = TROT_BACKWARD;
-                else if (rx_norm > 0.5) gait = TROT_RIGHT;
-                else if (rx_norm < -0.5) gait = TROT_LEFT;
+                if (data.ly_norm > 0.5) gaitDB = CREEP_FORWARD;
+                else if (data.ly_norm < -0.5) gaitDB = CREEP_BACKWARD;
+                else if (data.lx_norm > 0.5) gaitDB = CREEP_RIGHT;
+                else if (data.lx_norm < -0.5) gaitDB = CREEP_LEFT;
             }  
-            else if (up) {
+            else if (data.up) {
                 h += 2; 
                 return_to_neutral(); 
                 if (h > 50) h = 50;
                 Serial.printf("Height increased to: %d\n", h);
             }
-            else if (down) {
+            else if (data.down) {
                 h -= 2; 
                 return_to_neutral(); 
                 if (h < 0) h = 0;
@@ -221,27 +282,69 @@ void process_PS4_input() {
                 return_to_neutral();
             }     
             break;
-
             
-        case MODE_TRIANGLE:
-            // W trybie TRIANGLE używamy podtrybów
-            processTriangleSubModes(lx, ly, rx, ry, 
-                                   up, down, left, right, r1, r2, r2Value, l2Value);
+        case SUBMODE_DC:
+            if (data.left) {
+                Serial.println("DC");
+            }
+            else {
+                running = false; 
+                gait_phase = 0.0; 
+                return_to_neutral();
+            }
             break;
             
+        case SUBMODE_DD:
+            if (data.left) {
+                Serial.printf("DD");
+            }
+            else {
+                running = false; 
+                gait_phase = 0.0; 
+                return_to_neutral();
+            }
+            break;    }    
+}
+
+void process_PS4_input() {
+    if (!PS4.isConnected()) return;
+
+    // Globalne akcje przycisków (działają zawsze)
+    if (PS4.Share()) {ShowVoltage();}
+
+    // Odczyt wszystkich danych kontrolera
+    ControllerData data = read_PS4_input();
+
+    // DEBUG: Wyświetl wartości dla testów
+    // static unsigned long lastDebug = 0;
+    // if (millis() - lastDebug > 500) {
+    //     Serial.printf("LX: %d, LY: %d, RX: %d, RY: %d\n", data.lx, data.ly, data.rx, data.ry);
+    //     Serial.printf("Up: %d, Down: %d, Left: %d, Right: %d\n", data.up, data.down, data.left, data.right);
+    //     lastDebug = millis();
+    // }
+
+    switch(currentMode) {
+        case MODE_DEFAULT:
+            processDefaultSubModes(data);
+            break;
+
+        case MODE_TRIANGLE:
+            processTriangleSubModes(data);
+            break;
+
         case MODE_SQUARE:
             // Wspólna inicjalizacja dla wszystkich warunków
-            if (leftStickActive || rightStickActive) {
+            if (data.leftStickActive || data.rightStickActive) {
                 running = false;
                 gait_phase = 0.0;
             }
 
             // Prawa gałka - sterowanie pochyleniem
-            if (rightStickActive) {
-                int front = ry_norm * maxDeviation;
-                int rear = -ry_norm * maxDeviation;
-                int left = -rx_norm * maxDeviation;
-                int right = rx_norm * maxDeviation;
+            if (data.rightStickActive) {
+                int front = data.ry_norm * maxDeviation;
+                int rear = -data.ry_norm * maxDeviation;
+                int left = -data.rx_norm * maxDeviation;
+                int right = data.rx_norm * maxDeviation;
                 
                 move_servo_smooth(2, (90 - h + front + left));
                 move_servo_smooth(4, (90 + h - front - right));
@@ -250,11 +353,11 @@ void process_PS4_input() {
             }
 
             // Lewa gałka - sterowanie ruchem podstawowym
-            if (leftStickActive) {
-                int front = ly_norm * maxDeviation;  
-                int rear = -ly_norm * maxDeviation;    
-                int left = lx_norm * maxDeviation;   
-                int right = -lx_norm * maxDeviation;   
+            if (data.leftStickActive) {
+                int front = data.ly_norm * maxDeviation;  
+                int rear = -data.ly_norm * maxDeviation;    
+                int left = data.lx_norm * maxDeviation;   
+                int right = -data.lx_norm * maxDeviation;   
                 
                 move_servo_smooth(1, (45 + front + left));
                 move_servo_smooth(3, (135 - front - right));
@@ -263,13 +366,13 @@ void process_PS4_input() {
             }
 
             // Regulacja wysokości
-            if (up) {
+            if (data.up) {
                 h += 2; 
                 if (h > 50) h = 50;
                 Serial.printf("Height increased to: %d\n", h);
                 return_to_neutral(); // Tylko raz po zmianie wysokości
             }
-            if (down) {
+            if (data.down) {
                 h -= 2; 
                 if (h < 0) h = 0;
                 Serial.printf("Height decreased to: %d\n", h);
@@ -277,7 +380,7 @@ void process_PS4_input() {
             }
 
             // Powrót do neutralnej tylko gdy żadna gałka nieaktywna
-            if (!leftStickActive && !rightStickActive && !up && !down) {
+            if (!data.leftStickActive && !data. rightStickActive && !data.up && !data.down) {
                 return_to_neutral();
             }
             break;
@@ -288,6 +391,7 @@ void process_PS4_input() {
         case MODE_CIRCLE:
             break;
     }
+
     if (PS4.L1() && PS4.R1()) {
         handleMainModeChange(MODE_DEFAULT);
         Serial.println("Reset to DEFAULT mode");
@@ -298,12 +402,16 @@ void processButtons() {
     // Sprawdzanie przycisków do zmiany głównych flag
     if (PS4.Triangle()) {
         handleMainModeChange(MODE_TRIANGLE);
+        Serial.printf("Triangle mode");
     } else if (PS4.Square()) {
         handleMainModeChange(MODE_SQUARE);
+        Serial.printf("Square mode");
     } else if (PS4.Cross()) {
         handleMainModeChange(MODE_CROSS);
+        Serial.printf("Cross mode");
     } else if (PS4.Circle()) {
         handleMainModeChange(MODE_CIRCLE);
+        Serial.printf("Circle mode");
     }
     
     // Obsługa zmiany podtrybów w trybie TRIANGLE
@@ -312,6 +420,18 @@ void processButtons() {
             handleTriangleSubModeChange(true); // Zmiana w prawo
         } else if (PS4.L1() && !PS4.R1()) { // Tylko L1 wciśnięte
             handleTriangleSubModeChange(false); // Zmiana w lewo
+        }
+    }
+
+    // Obsługa zmiany podtrybów w trybie DEFAULT
+    if (currentMode == MODE_DEFAULT) {
+        if (PS4.R1() && !PS4.L1()) { // Tylko R1 wciśnięte
+            handleDefaultSubModeChange(true); // Zmiana w prawo
+            Serial.printf("Default mode change right");
+
+        } else if (PS4.L1() && !PS4.R1()) { // Tylko L1 wciśnięte
+            handleDefaultSubModeChange(false); // Zmiana w lewo
+            Serial.printf("Default mode change left");
         }
     }
 }
@@ -347,24 +467,23 @@ void setup() {
     Serial.println("Inicjalizacja zakończona");
 }
 
-void loop() {
-    static unsigned long lastStatus = 0;
-    
-    if (millis() - lastStatus > 2000) {
-        if (PS4.isConnected()) {
-            Serial.println("PS4 Connected - Waiting for input...");
-        } else {
-            Serial.println("PS4 Disconnected");
-        }
-        lastStatus = millis();
+// Funkcja pomocnicza do pobierania aktualnego gaitu
+GaitMode getCurrentGait() {
+    switch(defaultSubMode) {
+        case SUBMODE_DA: return gaitDA;
+        case SUBMODE_DB: return gaitDB;
+        default: return CREEP_FORWARD;
     }
-    
+}
+
+void loop() {    
     if (PS4.isConnected()) {
         process_PS4_input();
         processButtons();
         
         if (running) {
-            execute_gait(gait);
+            GaitMode currentGait = getCurrentGait(); // Pobierz odpowiedni gait dla aktywnego submode'u
+            execute_gait(currentGait); 
         }
     } else {
         if (running) {
@@ -373,6 +492,5 @@ void loop() {
             return_to_neutral();
         }
     }
-    
     delay(20);
 }

@@ -1,7 +1,7 @@
 // variable.cpp
 #include "variable.h"
 
-const float x_amp = 30;
+float x_amp = 30;
 const float z_amp = 15;
 const float OFFSET_FRONT = 0;
 const float OFFSET_BACK = 45;

@@ -8,53 +8,61 @@ float gait_phase = 0.0;
 
 // Definicje stałych konfiguracji
 const GaitParams GAIT_CONFIGS[] = {
+    // CREEP_FORWARD
     {
         {-x_amp, x_amp, -x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 + OFFSET_BACK, 90 - OFFSET_BACK},
         {0.00, 0.50, 0.25, 0.75}
     },
+    // CREEP_BACKWARD
     {
         {x_amp, -x_amp, +x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {90 - OFFSET_BACK, 90 + OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
         {0.25, 0.75, 0.00, 0.50}
     },
+    // CREEP_LEFT
     {
         {-x_amp, -x_amp, -x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {45 + x_amp / 2, 135 + x_amp / 2, 135 + x_amp / 2, 45 + x_amp / 2},
         {0.00, 0.50, 0.25, 0.75}
     },
+    // CREEP_RIGHT
     {
         {x_amp, x_amp, x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
         {45 - x_amp / 2, 135 - x_amp / 2, 135 - x_amp / 2, 45 - x_amp / 2},
         {0.00, 0.50, 0.25, 0.75}
     },
+    // TROT_FORWARD
     {
         {-x_amp, x_amp, -x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {90 - OFFSET_FRONT, 90 + OFFSET_FRONT, 90 + OFFSET_BACK, 90 - OFFSET_BACK},
-        {0.00, 0.50, 0.25, 0.75}
+        {45+x_amp/2, 135-x_amp/2, 135+x_amp/2, 45-x_amp/2},
+        {0.50, 0.00, 0.00, 0.50}
     },
+    // TROT_BACKWARD
     {
-        {x_amp, -x_amp, +x_amp, -x_amp},
+        {x_amp, -x_amp, x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {90 - OFFSET_BACK, 90 + OFFSET_BACK, 90 + OFFSET_FRONT, 90 - OFFSET_FRONT},
-        {0.25, 0.75, 0.00, 0.50}
+        {45-x_amp/2, 135+x_amp/2, 135-x_amp/2, 45+x_amp/2},
+        {0.50, 0.00, 0.00, 0.50}
     },
-    {
-        {-x_amp, -x_amp, -x_amp, -x_amp},
-        {z_amp, -z_amp, -z_amp, z_amp},
-        {45 + x_amp / 2, 135 + x_amp / 2, 135 + x_amp / 2, 45 + x_amp / 2},
-        {0.00, 0.50, 0.25, 0.75}
-    },
+    // TROT_LEFT
     {
         {x_amp, x_amp, x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
+        {45 + x_amp / 2, 135 + x_amp / 2, 135 + x_amp / 2, 45 + x_amp / 2},
+        {0.50, 0.00, 0.00, 0.50}
+    },
+    // TROT_RIGHT
+    {
+        {-x_amp, -x_amp, -x_amp, -x_amp},
+        {z_amp, -z_amp, -z_amp, z_amp},
         {45 - x_amp / 2, 135 - x_amp / 2, 135 - x_amp / 2, 45 - x_amp / 2},
-        {0.00, 0.50, 0.25, 0.75}
+        {0.50, 0.00, 0.00, 0.50}
     }
 };
 

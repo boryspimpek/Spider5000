@@ -2,7 +2,7 @@
 #pragma once
 
 // Gait parameters
-extern const float x_amp;
+extern float x_amp;
 extern const float z_amp;
 extern const float OFFSET_FRONT;
 extern const float OFFSET_BACK;
