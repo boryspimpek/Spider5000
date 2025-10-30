@@ -12,6 +12,7 @@
 #include "servos.h"
 #include "gait.h"
 #include "variable.h"
+#include "tricky.h"
 
 
 // Definicje głównych flag
@@ -50,10 +51,9 @@ DefaultSubMode defaultSubMode = SUBMODE_DA;
 GaitMode gaitDA = TROT_FORWARD;
 GaitMode gaitDB = CREEP_FORWARD;
 
-
 bool buttonsActive = true;
 unsigned long lastModeChange = 0;
-const unsigned long MODE_CHANGE_DELAY = 300; // ms
+const unsigned long MODE_CHANGE_DELAY = 300; 
 
 struct ControllerData {
     // Surowe wartości gałek
@@ -179,23 +179,29 @@ void processTriangleSubModes(ControllerData data) {
     
     switch(triangleSubMode) {
         case SUBMODE_TA:
-            // Podtryb A - podstawowe funkcje
-            if (abs(data.lx) > 10) {
-                Serial.printf("Triangle-A");
+            if (data.left) {
+                pushup();
+            }
+            
+            else if (data.right) {
+                pushupOneLeg();
+            }
+
+            else if (data.up) {
+                hello();
             }
             break;
-            
+
         case SUBMODE_TB:
-            // Podtryb B - zaawansowane ruchy
-            if (abs(data.ry) > 10) {
-                Serial.printf("Triangle-B");
+            if (data.down) {
+                Serial.println("Triangle-TB");
             }
             break;
             
         case SUBMODE_TC:
             // Podtryb C - kombinacje
             if (data.left && data.r1) {
-                Serial.println("Triangle-C");
+                Serial.println("Triangle-TC");
             }
             break;
             
