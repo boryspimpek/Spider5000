@@ -8,8 +8,8 @@ SMS_STS st;
 const int sts_id[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 const int acc = 250;
 const int speed = 2400;
-
-const int SERVO_TRIMS[8] = {-25, 10, 30, 0, -15, 0, -10, 60};
+//                           1   2   3   4    5    6   7   8
+const int SERVO_TRIMS[8] = {-25, 10, 30, -5, -15, -5, -10, 60};
 
 const int SERVO_LIMITS[8][2] = {
     {0, 90},                // servo 1

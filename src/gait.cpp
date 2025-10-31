@@ -54,14 +54,14 @@ const GaitParams GAIT_CONFIGS[] = {
     {
         {x_amp, x_amp, x_amp, x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {45 + x_amp / 2, 135 + x_amp / 2, 135 + x_amp / 2, 45 + x_amp / 2},
+        {45 - x_amp / 2, 135 - x_amp / 2, 135 - x_amp / 2, 45 - x_amp / 2},
         {0.50, 0.00, 0.00, 0.50}
     },
     // TROT_RIGHT
     {
         {-x_amp, -x_amp, -x_amp, -x_amp},
         {z_amp, -z_amp, -z_amp, z_amp},
-        {45 - x_amp / 2, 135 - x_amp / 2, 135 - x_amp / 2, 45 - x_amp / 2},
+        {45 + x_amp / 2, 135 + x_amp / 2, 135 + x_amp / 2, 45 + x_amp / 2},
         {0.50, 0.00, 0.00, 0.50}
     }
 };

@@ -30,7 +30,7 @@ enum TriangleSubMode {
     SUBMODE_TA = 0,
     SUBMODE_TB,
     SUBMODE_TC,
-    SUBMODE_TD,
+    // SUBMODE_TD,
     SUBMODE_COUNT_T
 };
 
@@ -38,8 +38,8 @@ enum TriangleSubMode {
 enum DefaultSubMode {
     SUBMODE_DA = 0,
     SUBMODE_DB,
-    SUBMODE_DC,
-    SUBMODE_DD,
+    // SUBMODE_DC,
+    // SUBMODE_DD,
     SUBMODE_COUNT_D
 };
 
@@ -182,41 +182,54 @@ void processTriangleSubModes(ControllerData data) {
             if (data.left) {
                 pushup();
             }
-            
             else if (data.right) {
                 pushupOneLeg();
             }
-
             else if (data.up) {
                 hello();
+            }
+            else if (data.down) {
+                sit();
             }
             break;
 
         case SUBMODE_TB:
-            if (data.down) {
-                Serial.println("Triangle-TB");
+            if (data.left) {
+                steps();
+            }
+            else if (data.right) {
+                bounce();
+            }
+            else if (data.up) {
+                dive();
+            }
+            else if (data.down) {
+                sayNo();
             }
             break;
             
         case SUBMODE_TC:
-            // Podtryb C - kombinacje
-            if (data.left && data.r1) {
-                Serial.println("Triangle-TC");
+            if (data.left) {
+                downLeft();
+            }
+            else if (data.right) {
+                downRight();
+            }
+            else if (data.up) {
+                downFront();
+            }
+            else if (data.down) {
+                downBack();
             }
             break;
             
-        case SUBMODE_TD:
-            // Podtryb D - precyzyjne sterowanie
-            if (abs(data.lx) > 2) {
-                Serial.printf("Triangle-D");
-            }
+        // case SUBMODE_TD:
+        //     // Podtryb D - precyzyjne sterowanie
+        //     if (abs(data.lx) > 2) {
+        //         Serial.printf("Triangle-D");
+        //     }
             
-            break;
-    }
-    
-    // Wspólne akcje dla wszystkich podtrybów TRIANGLE
-    if (PS4.Touchpad()) {
-        Serial.println("Triangle - Touchpad: Special action!");
+        //     break;
     }
 }
 
@@ -289,27 +302,28 @@ void processDefaultSubModes(ControllerData data) {
             }     
             break;
             
-        case SUBMODE_DC:
-            if (data.left) {
-                Serial.println("DC");
-            }
-            else {
-                running = false; 
-                gait_phase = 0.0; 
-                return_to_neutral();
-            }
-            break;
+        // case SUBMODE_DC:
+        //     if (data.left) {
+        //         Serial.println("DC");
+        //     }
+        //     else {
+        //         running = false; 
+        //         gait_phase = 0.0; 
+        //         return_to_neutral();
+        //     }
+        //     break;
             
-        case SUBMODE_DD:
-            if (data.left) {
-                Serial.printf("DD");
-            }
-            else {
-                running = false; 
-                gait_phase = 0.0; 
-                return_to_neutral();
-            }
-            break;    }    
+        // case SUBMODE_DD:
+        //     if (data.left) {
+        //         Serial.printf("DD");
+        //     }
+        //     else {
+        //         running = false; 
+        //         gait_phase = 0.0; 
+        //         return_to_neutral();
+        //     }
+        //     break;    
+    }    
 }
 
 void process_PS4_input() {
