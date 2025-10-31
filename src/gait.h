@@ -19,7 +19,9 @@ enum GaitMode {
     TROT_FORWARD,
     TROT_BACKWARD,
     TROT_LEFT,
-    TROT_RIGHT
+    TROT_RIGHT,
+    TROT_MOVE_RIGHT,
+    TROT_MOVE_LEFT
 };
 
 // Parametry chodu

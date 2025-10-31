@@ -244,6 +244,12 @@ void processDefaultSubModes(ControllerData data) {
                 else if (data.lx_norm > 0.5) gaitDA = TROT_RIGHT;
                 else if (data.lx_norm < -0.5) gaitDA = TROT_LEFT;
             }
+            else if (data.rightStickActive) {
+                running = true;
+                if (data.rx_norm > 0.5) gaitDA = TROT_MOVE_RIGHT;
+                else if (data.rx_norm < -0.5) gaitDA = TROT_MOVE_LEFT;
+            }
+
             else if (data.up) {
                 h += 2; 
                 return_to_neutral(); 
@@ -255,18 +261,6 @@ void processDefaultSubModes(ControllerData data) {
                 return_to_neutral(); 
                 if (h < 0) h = 0;
                 Serial.print(h);
-            }
-            else if (data.left) {
-                x_amp += 2; 
-                return_to_neutral(); 
-                if (x_amp > 30) x_amp = 30;
-                Serial.print(x_amp);
-            }
-            else if (data.right) {
-                x_amp -= 2; 
-                return_to_neutral(); 
-                if (x_amp < 15) x_amp = 15;
-                Serial.print(x_amp);
             }
             else {
                 running = false; 
@@ -386,17 +380,17 @@ void process_PS4_input() {
             }
 
             // Regulacja wysokości
-            if (data.up) {
+            else if (data.up) {
                 h += 2; 
                 if (h > 50) h = 50;
                 Serial.printf("Height increased to: %d\n", h);
-                return_to_neutral(); // Tylko raz po zmianie wysokości
+                return_to_neutral();
             }
-            if (data.down) {
+            else if (data.down) {
                 h -= 2; 
                 if (h < 0) h = 0;
                 Serial.printf("Height decreased to: %d\n", h);
-                return_to_neutral(); // Tylko raz po zmianie wysokości
+                return_to_neutral();
             }
 
             // Powrót do neutralnej tylko gdy żadna gałka nieaktywna
