@@ -9,6 +9,6 @@ const float OFFSET_BACK = 45;
 int maxDeviation = 50;
 
 float h = 20;
-float t_cycle = 1.5;
+float t_cycle = 1.0;
 
 const float DEADZONE = 0.2; 
