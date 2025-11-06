@@ -34,22 +34,11 @@ enum TriangleSubMode {
     SUBMODE_COUNT_T
 };
 
-// Definicje podtrybów dla trybu DEFAULT
-enum DefaultSubMode {
-    SUBMODE_DA = 0,
-    SUBMODE_DB,
-    // SUBMODE_DC,
-    // SUBMODE_DD,
-    SUBMODE_COUNT_D
-};
-
 // Globalne zmienne
 ModeFlag currentMode = MODE_DEFAULT;
 TriangleSubMode triangleSubMode = SUBMODE_TA;
-DefaultSubMode defaultSubMode = SUBMODE_DA;
 
-GaitMode gaitDA = TROT_FORWARD;
-GaitMode gaitDB = CREEP_FORWARD;
+GaitMode currentGait = TROT_FORWARD;
 
 bool buttonsActive = true;
 unsigned long lastModeChange = 0;
@@ -66,7 +55,7 @@ struct ControllerData {
     float lx_norm, ly_norm, rx_norm, ry_norm;
     
     // Przyciski
-    bool r1, r2, up, down, left, right;
+    bool l1, l2, r1, r2, up, down, left, right;
     
     // Wartości analogowe
     int r2Value, l2Value;
@@ -97,6 +86,8 @@ ControllerData read_PS4_input() {
     data.ry_norm = data.ry / 128.0;
     
     // Odczyt przycisków R1, R2, strzałek
+    data.l1 = PS4.L1();
+    data.l2 = PS4.L2();
     data.r1 = PS4.R1();
     data.r2 = PS4.R2();
     data.up = PS4.Up();
@@ -128,11 +119,7 @@ void handleMainModeChange(ModeFlag newMode) {
         // Reset podtrybu gdy zmieniamy główny tryb
         if (currentMode != MODE_TRIANGLE) {
             triangleSubMode = SUBMODE_TA;
-        }
-        else if (currentMode != MODE_TRIANGLE) {
-            defaultSubMode = SUBMODE_DA;
-        }
-        
+        }        
         buttonsActive = true;
     }
 }
@@ -147,25 +134,6 @@ void handleTriangleSubModeChange(bool moveRight) {
         } else {
             // Zmiana w lewo (L1)
             triangleSubMode = (TriangleSubMode)((triangleSubMode - 1 + SUBMODE_COUNT_T) % SUBMODE_COUNT_T);
-        }
-        
-        buttonsActive = false;
-        lastModeChange = currentTime;
-        
-        buttonsActive = true;
-    }
-}
-
-void handleDefaultSubModeChange(bool moveRight) {
-    unsigned long currentTime = millis();
-    
-    if (buttonsActive && (currentTime - lastModeChange) > MODE_CHANGE_DELAY) {
-        if (moveRight) {
-            // Zmiana w prawo (R1)
-            defaultSubMode = (DefaultSubMode)((defaultSubMode + 1) % SUBMODE_COUNT_D);
-        } else {
-            // Zmiana w lewo (L1)
-            defaultSubMode = (DefaultSubMode)((defaultSubMode - 1 + SUBMODE_COUNT_D) % SUBMODE_COUNT_D);
         }
         
         buttonsActive = false;
@@ -233,175 +201,107 @@ void processTriangleSubModes(ControllerData data) {
     }
 }
 
-void processDefaultSubModes(ControllerData data) {
-    
-    switch(defaultSubMode) {
-        case SUBMODE_DA:
-            if (data.leftStickActive) {
-                running = true;
-                if (data.ly_norm > 0.5) gaitDA = TROT_FORWARD;
-                else if (data.ly_norm < -0.5) gaitDA = TROT_BACKWARD;
-                else if (data.lx_norm > 0.5) gaitDA = TROT_RIGHT;
-                else if (data.lx_norm < -0.5) gaitDA = TROT_LEFT;
-            }
-            else if (data.rightStickActive) {
-                running = true;
-                if (data.rx_norm > 0.5) gaitDA = TROT_MOVE_RIGHT;
-                else if (data.rx_norm < -0.5) gaitDA = TROT_MOVE_LEFT;
-            }
-
-            else if (data.up) {
-                h += 2; 
-                return_to_neutral(); 
-                if (h > 50) h = 50;
-                Serial.print(h);
-            }
-            else if (data.down) {
-                h -= 2; 
-                return_to_neutral(); 
-                if (h < 0) h = 0;
-                Serial.print(h);
-            }
-            else {
-                running = false; 
-                gait_phase = 0.0; 
-                return_to_neutral();
-            }     
-            break;
-            
-        case SUBMODE_DB:
-            if (data.leftStickActive) {
-                running = true;
-                if (data.ly_norm > 0.5) gaitDB = CREEP_FORWARD;
-                else if (data.ly_norm < -0.5) gaitDB = CREEP_BACKWARD;
-                else if (data.lx_norm > 0.5) gaitDB = CREEP_RIGHT;
-                else if (data.lx_norm < -0.5) gaitDB = CREEP_LEFT;
-            }  
-            else if (data.up) {
-                h += 2; 
-                return_to_neutral(); 
-                if (h > 50) h = 50;
-                Serial.printf("Height increased to: %d\n", h);
-            }
-            else if (data.down) {
-                h -= 2; 
-                return_to_neutral(); 
-                if (h < 0) h = 0;
-                Serial.printf("Height decreased to: %d\n", h);
-            }
-            else {
-                running = false; 
-                gait_phase = 0.0; 
-                return_to_neutral();
-            }     
-            break;
-            
-        // case SUBMODE_DC:
-        //     if (data.left) {
-        //         Serial.println("DC");
-        //     }
-        //     else {
-        //         running = false; 
-        //         gait_phase = 0.0; 
-        //         return_to_neutral();
-        //     }
-        //     break;
-            
-        // case SUBMODE_DD:
-        //     if (data.left) {
-        //         Serial.printf("DD");
-        //     }
-        //     else {
-        //         running = false; 
-        //         gait_phase = 0.0; 
-        //         return_to_neutral();
-        //     }
-        //     break;    
-    }    
-}
-
 void process_PS4_input() {
     if (!PS4.isConnected()) return;
 
-    // Globalne akcje przycisków (działają zawsze)
-    if (PS4.Share()) {ShowVoltage();}
+    if (PS4.Share()) {
+        ShowVoltage();
+    }
 
-    // Odczyt wszystkich danych kontrolera
     ControllerData data = read_PS4_input();
 
     // DEBUG: Wyświetl wartości dla testów
-    // static unsigned long lastDebug = 0;
-    // if (millis() - lastDebug > 500) {
-    //     Serial.printf("LX: %d, LY: %d, RX: %d, RY: %d\n", data.lx, data.ly, data.rx, data.ry);
-    //     Serial.printf("Up: %d, Down: %d, Left: %d, Right: %d\n", data.up, data.down, data.left, data.right);
-    //     lastDebug = millis();
-    // }
+    /*
+    static unsigned long lastDebug = 0;
+    if (millis() - lastDebug > 500) {
+        Serial.printf("LX: %d, LY: %d, RX: %d, RY: %d\n", data.lx, data.ly, data.rx, data.ry);
+        Serial.printf("Up: %d, Down: %d, Left: %d, Right: %d\n", data.up, data.down, data.left, data.right);
+        lastDebug = millis();
+    }
+    */
 
-    switch(currentMode) {
+    switch (currentMode) {
         case MODE_DEFAULT:
-            processDefaultSubModes(data);
-            break;
-
+            if (data.r1) {
+                // Tryb R1 - bezpośrednie sterowanie serwami
+                running = false;
+                gait_phase = 0.0;
+                
+                if (data.rightStickActive) {
+                    int front = data.ry_norm * maxDeviation;
+                    int rear = -data.ry_norm * maxDeviation;
+                    int left = -data.rx_norm * maxDeviation;
+                    int right = data.rx_norm * maxDeviation;
+                    
+                    move_servo_smooth(2, (90 - h + front + left));
+                    move_servo_smooth(4, (90 + h - front - right));
+                    move_servo_smooth(6, (90 + h - rear - left));
+                    move_servo_smooth(8, (90 - h + rear + right));
+                }
+                
+                if (data.leftStickActive) {
+                    int front = data.ly_norm * maxDeviation;
+                    int rear = -data.ly_norm * maxDeviation;
+                    int left = data.lx_norm * maxDeviation;
+                    int right = -data.lx_norm * maxDeviation;
+                    
+                    move_servo_smooth(1, (45 + front + left));
+                    move_servo_smooth(3, (135 - front - right));
+                    move_servo_smooth(5, (135 - rear - left));
+                    move_servo_smooth(7, (45 + rear + right));
+                }
+                
+                if (!data.leftStickActive && !data.rightStickActive) {
+                    return_to_neutral();
+                }
+            }
+            else if (data.leftStickActive) {
+                running = true;
+                if (data.l1) {
+                    if (data.ly_norm > 0.5) currentGait = CREEP_FORWARD;
+                    else if (data.ly_norm < -0.5) currentGait = CREEP_BACKWARD;
+                    else if (data.lx_norm > 0.5) currentGait = CREEP_RIGHT;
+                    else if (data.lx_norm < -0.5) currentGait = CREEP_LEFT;
+                } else {
+                    if (data.ly_norm > 0.5) currentGait = TROT_FORWARD;
+                    else if (data.ly_norm < -0.5) currentGait = TROT_BACKWARD;
+                    else if (data.lx_norm > 0.5) currentGait = TROT_RIGHT;
+                    else if (data.lx_norm < -0.5) currentGait = TROT_LEFT;
+                }
+            }
+            else if (data.rightStickActive) {
+                running = true;
+                if (data.rx_norm > 0.5) currentGait = TROT_MOVE_RIGHT;
+                else if (data.rx_norm < -0.5) currentGait = TROT_MOVE_LEFT;
+            }
+            else if (data.up) {
+                h += 2;
+                return_to_neutral();
+                if (h > 50) h = 50;
+                Serial.print(h);
+            }
+            else if (data.down) {
+                h -= 2;
+                return_to_neutral();
+                if (h < 0) h = 0;
+                Serial.print(h);
+            }
+            else {
+                running = false;
+                gait_phase = 0.0;
+                return_to_neutral();
+            }
+            break;        
         case MODE_TRIANGLE:
             processTriangleSubModes(data);
             break;
 
         case MODE_SQUARE:
-            // Wspólna inicjalizacja dla wszystkich warunków
-            if (data.leftStickActive || data.rightStickActive) {
-                running = false;
-                gait_phase = 0.0;
-            }
-
-            // Prawa gałka - sterowanie pochyleniem
-            if (data.rightStickActive) {
-                int front = data.ry_norm * maxDeviation;
-                int rear = -data.ry_norm * maxDeviation;
-                int left = -data.rx_norm * maxDeviation;
-                int right = data.rx_norm * maxDeviation;
-                
-                move_servo_smooth(2, (90 - h + front + left));
-                move_servo_smooth(4, (90 + h - front - right));
-                move_servo_smooth(6, (90 + h - rear - left));
-                move_servo_smooth(8, (90 - h + rear + right));
-            }
-
-            // Lewa gałka - sterowanie ruchem podstawowym
-            if (data.leftStickActive) {
-                int front = data.ly_norm * maxDeviation;  
-                int rear = -data.ly_norm * maxDeviation;    
-                int left = data.lx_norm * maxDeviation;   
-                int right = -data.lx_norm * maxDeviation;   
-                
-                move_servo_smooth(1, (45 + front + left));
-                move_servo_smooth(3, (135 - front - right));
-                move_servo_smooth(5, (135 - rear - left));
-                move_servo_smooth(7, (45 + rear + right));
-            }
-
-            // Regulacja wysokości
-            else if (data.up) {
-                h += 2; 
-                if (h > 50) h = 50;
-                Serial.printf("Height increased to: %d\n", h);
-                return_to_neutral();
-            }
-            else if (data.down) {
-                h -= 2; 
-                if (h < 0) h = 0;
-                Serial.printf("Height decreased to: %d\n", h);
-                return_to_neutral();
-            }
-
-            // Powrót do neutralnej tylko gdy żadna gałka nieaktywna
-            if (!data.leftStickActive && !data. rightStickActive && !data.up && !data.down) {
-                return_to_neutral();
-            }
             break;
 
         case MODE_CROSS:
             break;
-            
+
         case MODE_CIRCLE:
             break;
     }
@@ -434,18 +334,6 @@ void processButtons() {
             handleTriangleSubModeChange(true); // Zmiana w prawo
         } else if (PS4.L1() && !PS4.R1()) { // Tylko L1 wciśnięte
             handleTriangleSubModeChange(false); // Zmiana w lewo
-        }
-    }
-
-    // Obsługa zmiany podtrybów w trybie DEFAULT
-    if (currentMode == MODE_DEFAULT) {
-        if (PS4.R1() && !PS4.L1()) { // Tylko R1 wciśnięte
-            handleDefaultSubModeChange(true); // Zmiana w prawo
-            Serial.printf("Default mode change right");
-
-        } else if (PS4.L1() && !PS4.R1()) { // Tylko L1 wciśnięte
-            handleDefaultSubModeChange(false); // Zmiana w lewo
-            Serial.printf("Default mode change left");
         }
     }
 }
@@ -481,22 +369,12 @@ void setup() {
     Serial.println("Inicjalizacja zakończona");
 }
 
-// Funkcja pomocnicza do pobierania aktualnego gaitu
-GaitMode getCurrentGait() {
-    switch(defaultSubMode) {
-        case SUBMODE_DA: return gaitDA;
-        case SUBMODE_DB: return gaitDB;
-        default: return CREEP_FORWARD;
-    }
-}
-
 void loop() {    
     if (PS4.isConnected()) {
         process_PS4_input();
         processButtons();
         
         if (running) {
-            GaitMode currentGait = getCurrentGait(); // Pobierz odpowiedni gait dla aktywnego submode'u
             execute_gait(currentGait); 
         }
     } else {

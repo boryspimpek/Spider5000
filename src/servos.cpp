@@ -7,7 +7,7 @@ SMS_STS st;
 
 const int sts_id[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 const int acc = 250;
-const int speed = 2400;
+const int speed = 4000;
 //                           1   2   3   4    5    6   7   8
 const int SERVO_TRIMS[8] = {-25, 10, 30, -5, -15, -5, -10, 60};
 

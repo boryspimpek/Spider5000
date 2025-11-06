@@ -99,18 +99,7 @@ void creep_gait(float x_amp, float z_amp, float x_off, float z_off, float phase,
     }
 }
 
-void trot_gait(float x_amp, float z_amp, float x_off, float z_off, float phase, float& z, float& x) {
-    if (phase < 0.5f) {
-        z = z_off + z_amp * sin(phase * 2.0f * M_PI);
-        x = x_off + x_amp * sin(phase * M_PI);
-    } else {
-        z = z_off;
-        x = x_off + x_amp * cos((phase - 0.5f) * M_PI);
-    }
-}
-
-void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
-    const GaitParams& params = GAIT_CONFIGS[mode];
+void calculate_gait_angles(float phase, const GaitParams& params, float angles[4][2]) {
     float dynamic_z_offsets[4] = {90 - h, 90 + h, 90 + h, 90 - h};
 
     for (int i = 0; i < 4; i++) {
@@ -120,7 +109,7 @@ void calculate_gait_angles(GaitMode mode, float phase, float angles[4][2]) {
     }
 }
 
-void execute_gait(GaitMode mode) {
+void execute_gait(GaitMode currentGait) {
     unsigned long current_time = millis();
     if (current_time - last_gait_time < GAIT_DT) return;
 
@@ -128,7 +117,7 @@ void execute_gait(GaitMode mode) {
     gait_phase = fmod(gait_phase + (GAIT_DT / 1000.0) / t_cycle, 1.0);
 
     float angles[4][2];
-    calculate_gait_angles(mode, gait_phase, angles);
+    calculate_gait_angles(gait_phase, GAIT_CONFIGS[currentGait], angles);
 
     for (int i = 0; i < 8; i++) {
         const ServoMapping& mapping = SERVO_MAPPING[i];
