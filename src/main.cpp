@@ -223,7 +223,6 @@ void process_PS4_input() {
     switch (currentMode) {
         case MODE_DEFAULT:
             if (data.r1) {
-                // Tryb R1 - bezpośrednie sterowanie serwami
                 running = false;
                 gait_phase = 0.0;
                 
@@ -313,7 +312,6 @@ void process_PS4_input() {
 }
 
 void processButtons() {
-    // Sprawdzanie przycisków do zmiany głównych flag
     if (PS4.Triangle()) {
         handleMainModeChange(MODE_TRIANGLE);
         Serial.printf("Triangle mode");
