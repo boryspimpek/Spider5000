@@ -26,19 +26,19 @@ enum ModeFlag {
 };
 
 // Definicje podtrybów dla trybu TRIANGLE
-enum TriangleSubMode {
-    SUBMODE_TA = 0,
-    SUBMODE_TB,
-    // SUBMODE_TC,
-    // SUBMODE_TD,
-    SUBMODE_COUNT_T
-};
+// enum TriangleSubMode {
+//     SUBMODE_TA = 0,
+//     SUBMODE_TB,
+//     // SUBMODE_TC,
+//     // SUBMODE_TD,
+//     SUBMODE_COUNT_T
+// };
 
 // Globalne zmienne
 ModeFlag currentMode = MODE_DEFAULT;
-TriangleSubMode triangleSubMode = SUBMODE_TA;
-
 GaitMode currentGait = TROT_FORWARD;
+// TriangleSubMode triangleSubMode = SUBMODE_TA;
+
 
 bool buttonsActive = true;
 unsigned long lastModeChange = 0;
@@ -119,9 +119,9 @@ void handleMainModeChange(ModeFlag newMode) {
         lastModeChange = currentTime;
         
         // Reset podtrybu gdy zmieniamy główny tryb
-        if (currentMode != MODE_TRIANGLE) {
-            triangleSubMode = SUBMODE_TA;
-        }        
+        // if (currentMode != MODE_TRIANGLE) {
+        //     triangleSubMode = SUBMODE_TA;
+        // }        
         buttonsActive = true;
     }
 }
@@ -208,9 +208,6 @@ void process_PS4_input() {
 
     switch (currentMode) {
         case MODE_DEFAULT: 
-            // running = false;  
-            // gait_phase = 0.0;
-
             if (data.r1 && data.rightStickActive) {
                 running = false;
                 int front = data.ry_norm * maxDeviation;
@@ -329,16 +326,16 @@ void processButtons() {
         Serial.printf("Circle mode");
     }
     
-    if (currentMode == MODE_TRIANGLE) {
-        static bool r1WasPressed = false;
-        if (PS4.R1() && !r1WasPressed) {
-            triangleSubMode = (TriangleSubMode)((triangleSubMode + 1) % SUBMODE_COUNT_T);
-            Serial.printf("Triangle submode: %d\n", triangleSubMode);
-            r1WasPressed = true;
-        } else if (!PS4.R1()) {
-            r1WasPressed = false;
-        }
-    }
+    // if (currentMode == MODE_TRIANGLE) {
+    //     static bool r1WasPressed = false;
+    //     if (PS4.R1() && !r1WasPressed) {
+    //         triangleSubMode = (TriangleSubMode)((triangleSubMode + 1) % SUBMODE_COUNT_T);
+    //         Serial.printf("Triangle submode: %d\n", triangleSubMode);
+    //         r1WasPressed = true;
+    //     } else if (!PS4.R1()) {
+    //         r1WasPressed = false;
+    //     }
+    // }
 
     if (currentMode == MODE_SQUARE) {
         static bool r1WasPressed = false;
