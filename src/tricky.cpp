@@ -30,36 +30,6 @@ void hello() {
   return_to_neutral();
 }
 
-void pushupOneLeg() {
-  const ServoPos PUSHUP_POS[] = {
-    {1, 90}, {2, 90}, {3, 90}, {4, 90},
-    {5, 135}, {6, 110}, {7, 45}, {8, 70}
-  };
-
-  const int NUM_SERVOS = sizeof(PUSHUP_POS) / sizeof(PUSHUP_POS[0]);
-
-  for (int i = 0; i < NUM_SERVOS; i++) {
-    move_servo(PUSHUP_POS[i].id, PUSHUP_POS[i].angle);
-  }
-
-  for (int i = 0; i < 3; i++) {
-    move_servo(2, 90);
-    delay(700); 
-    move_servo(2, 30);
-    delay(700);
-  }
-  move_servo(2, 90); 
-
-  for (int i = 0; i < 3; i++) {
-    move_servo(4, 90);
-    delay(700);
-    move_servo(4, 150);
-    delay(700);
-  }
-
-  return_to_neutral();
-}
-
 void pushup() {
     const ServoPos PUSHUP_POS[] = {
         {1, 90}, {2, 90}, {3, 90}, {4, 90},
@@ -82,19 +52,6 @@ void pushup() {
         delay(700);
     }
 
-    return_to_neutral();
-}
-
-void sit() {
-    move_servo(5, 90);
-    move_servo(7, 90);
-    move_servo(6, 90-10);
-    move_servo(8, 90+10);
-    delay(700);
-
-    move_servo(2, 90-40);
-    move_servo(4, 90+40);
-    delay(1500);
     return_to_neutral();
 }
 
@@ -203,47 +160,91 @@ void dive() {
   return_to_neutral();
 }
   
-void steps() {
+void frontSteps() {
   for (int i = 0; i < 2; i++) {
-    move_servo(2, 90 - h - 30);
-    move_servo(4, 90 + h - 30);
-    move_servo(6, 90 + h - 30);
-    move_servo(8, 90 - h - 30);
+        move_servo(2, 120);
+        move_servo(4, 120);
+        delay(700);
+
+        move_servo(2, 60);
+        move_servo(4, 60);
+        delay(700);
+
+    return_to_neutral();
+  }
+}
+
+void playDead() {
+    move_servo(1, 90);
+    move_servo(2, 140);
+    move_servo(3, 90);
+    move_servo(4, 40);
+    move_servo(5, 90);
+    move_servo(6, 40);
+    move_servo(7, 90);
+    move_servo(8, 140);
+
+    delay(3000);
+    return_to_neutral();
+}
+
+void twoLegUp() {
+    move_servo(1, 45);
+    move_servo(2, 140);
+    move_servo(3, 135);
+    move_servo(4, 110);
+    move_servo(5, 135);
+    move_servo(6, 110);
+    move_servo(7, 45);
+    move_servo(8, 140);
+    delay(700);
+
+    for (int i = 0; i < 2; i++) {
+        move_servo(4, 60);
+        move_servo(6, 140);
+        delay(700);
+
+        move_servo(4, 140);
+        move_servo(6, 60);
+        delay(700);
+    }
+
+    return_to_neutral();
+}
+
+void twoLegMove() {
+    move_servo(1, 45);
+    move_servo(2, 70);
+    move_servo(3, 135);
+    move_servo(4, 40);
+    move_servo(5, 135);
+    move_servo(6, 40);
+    move_servo(7, 45);
+    move_servo(8, 70);
     delay(500);
 
-    move_servo(2, 90 - h + 30);
-    move_servo(4, 90 + h + 30);
-    move_servo(6, 90 + h + 30);
-    move_servo(8, 90 - h + 30);
-    delay(500);
-  }  
-  return_to_neutral();
-}  
+    for (int i = 0; i < 2; i++) {
+        move_servo(1, 75);
+        move_servo(7, 75);
+        delay(700);
 
-void downFront() {
-    move_servo(2, 90-h+40);
-    move_servo(4, 90+h-40);
-    delay(700);
+        move_servo(1, 15);
+        move_servo(7, 15);
+        delay(700);
+    }
+
     return_to_neutral();
 }
 
-void downBack() {
-    move_servo(6, 90+h-40);
-    move_servo(8, 90-h+40);
-    delay(700);
-    return_to_neutral();
+void left() {
+  Serial.println("Left");
 }
-
-void downLeft() {
-    move_servo(2, 90-h+40);
-    move_servo(6, 90+h-40);
-    delay(700);
-    return_to_neutral();
+void right() {
+  Serial.println("Right");
 }
-
-void downRight() {
-    move_servo(4, 90+h-40);
-    move_servo(8, 90-h+40);
-    delay(700);
-    return_to_neutral();
+void front() {
+  Serial.println("Front");
+}
+void back() {
+  Serial.println("Back");
 }

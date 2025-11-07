@@ -29,7 +29,7 @@ enum ModeFlag {
 enum TriangleSubMode {
     SUBMODE_TA = 0,
     SUBMODE_TB,
-    SUBMODE_TC,
+    // SUBMODE_TC,
     // SUBMODE_TD,
     SUBMODE_COUNT_T
 };
@@ -43,6 +43,8 @@ GaitMode currentGait = TROT_FORWARD;
 bool buttonsActive = true;
 unsigned long lastModeChange = 0;
 const unsigned long MODE_CHANGE_DELAY = 300; 
+
+int activeleg = 1;
 
 struct ControllerData {
     // Surowe wartości gałek
@@ -124,80 +126,74 @@ void handleMainModeChange(ModeFlag newMode) {
     }
 }
 
-void handleTriangleSubModeChange(bool moveRight) {
-    unsigned long currentTime = millis();
-    
-    if (buttonsActive && (currentTime - lastModeChange) > MODE_CHANGE_DELAY) {
-        if (moveRight) {
-            // Zmiana w prawo (R1)
-            triangleSubMode = (TriangleSubMode)((triangleSubMode + 1) % SUBMODE_COUNT_T);
-        } else {
-            // Zmiana w lewo (L1)
-            triangleSubMode = (TriangleSubMode)((triangleSubMode - 1 + SUBMODE_COUNT_T) % SUBMODE_COUNT_T);
+void processSquareMode(ControllerData data) {
+    running = false;
+    gait_phase = 0.0;
+
+    // PRAWA GAŁKA - sterowanie aktywną nogą
+    if (data.rightStickActive) {
+        int coxa_servo = activeleg;
+        int femur_servo = activeleg + 1;
+        
+        int coxa_move = 0;
+        int femur_move = 0;
+        
+        switch(activeleg) {
+            case 1: // Przednia lewa
+                coxa_move = -data.rx_norm * maxDeviation;
+                femur_move = data.ry_norm * maxDeviation;
+                move_servo_smooth(coxa_servo, 45 + coxa_move);
+                move_servo_smooth(femur_servo, 90 - h + femur_move);
+                break;
+            
+            case 3: // Przednia prawa
+                coxa_move = -data.rx_norm * maxDeviation;
+                femur_move = -data.ry_norm * maxDeviation;
+                move_servo_smooth(coxa_servo, 135 + coxa_move);
+                move_servo_smooth(femur_servo, 90 + h + femur_move);
+                break;
+            
+            case 5: // Tylna lewa
+                coxa_move = data.rx_norm * maxDeviation;
+                femur_move = -data.ry_norm * maxDeviation;
+                move_servo_smooth(coxa_servo, 135 + coxa_move);
+                move_servo_smooth(femur_servo, 90 + h + femur_move);
+                break;
+            
+            case 7: // Tylna prawa
+                coxa_move = data.rx_norm * maxDeviation;
+                femur_move = data.ry_norm * maxDeviation;
+                move_servo_smooth(coxa_servo, 45 + coxa_move);
+                move_servo_smooth(femur_servo, 90 - h + femur_move);
+                break;
         }
-        
-        buttonsActive = false;
-        lastModeChange = currentTime;
-        
-        buttonsActive = true;
     }
-}
 
-void processTriangleSubModes(ControllerData data) {
-    
-    switch(triangleSubMode) {
-        case SUBMODE_TA:
-            if (data.left) {
-                pushup();
-            }
-            else if (data.right) {
-                pushupOneLeg();
-            }
-            else if (data.up) {
-                hello();
-            }
-            else if (data.down) {
-                sit();
-            }
-            break;
+    // LEWA GAŁKA - sterowanie pozostałymi 3 nogami (jak MODE_DEFAULT z R1)
+    if (data.leftStickActive) {
+        int front = data.ly_norm * maxDeviation;
+        int rear = -data.ly_norm * maxDeviation;
+        int left = data.lx_norm * maxDeviation;
+        int right = -data.lx_norm * maxDeviation;
 
-        case SUBMODE_TB:
-            if (data.left) {
-                steps();
-            }
-            else if (data.right) {
-                bounce();
-            }
-            else if (data.up) {
-                dive();
-            }
-            else if (data.down) {
-                sayNo();
-            }
-            break;
-            
-        case SUBMODE_TC:
-            if (data.left) {
-                downLeft();
-            }
-            else if (data.right) {
-                downRight();
-            }
-            else if (data.up) {
-                downFront();
-            }
-            else if (data.down) {
-                downBack();
-            }
-            break;
-            
-        // case SUBMODE_TD:
-        //     // Podtryb D - precyzyjne sterowanie
-        //     if (abs(data.lx) > 2) {
-        //         Serial.printf("Triangle-D");
-        //     }
-            
-        //     break;
+        // Steruj serwami coxa pozostałych nóg
+        if (activeleg != 1) {
+            move_servo_smooth(1, 45 + front + left);
+        }
+        if (activeleg != 3) {
+            move_servo_smooth(3, 135 - front - right);
+        }
+        if (activeleg != 5) {
+            move_servo_smooth(5, 135 - rear - left);
+        }
+        if (activeleg != 7) {
+            move_servo_smooth(7, 45 + rear + right);
+        }
+    }
+
+    // Jeśli żadna gałka nie jest aktywna - powrót do neutralnej
+    if (!data.leftStickActive && !data.rightStickActive) {
+        return_to_neutral();
     }
 }
 
@@ -210,79 +206,67 @@ void process_PS4_input() {
 
     ControllerData data = read_PS4_input();
 
-    // DEBUG: Wyświetl wartości dla testów
-    /*
-    static unsigned long lastDebug = 0;
-    if (millis() - lastDebug > 500) {
-        Serial.printf("LX: %d, LY: %d, RX: %d, RY: %d\n", data.lx, data.ly, data.rx, data.ry);
-        Serial.printf("Up: %d, Down: %d, Left: %d, Right: %d\n", data.up, data.down, data.left, data.right);
-        lastDebug = millis();
-    }
-    */
-
     switch (currentMode) {
-        case MODE_DEFAULT:
-            if (data.r1) {
+        case MODE_DEFAULT: 
+            // running = false;  
+            // gait_phase = 0.0;
+
+            if (data.r1 && data.rightStickActive) {
                 running = false;
-                gait_phase = 0.0;
-                
-                if (data.rightStickActive) {
-                    int front = data.ry_norm * maxDeviation;
-                    int rear = -data.ry_norm * maxDeviation;
-                    int left = -data.rx_norm * maxDeviation;
-                    int right = data.rx_norm * maxDeviation;
-                    
-                    move_servo_smooth(2, (90 - h + front + left));
-                    move_servo_smooth(4, (90 + h - front - right));
-                    move_servo_smooth(6, (90 + h - rear - left));
-                    move_servo_smooth(8, (90 - h + rear + right));
-                }
-                
-                if (data.leftStickActive) {
-                    int front = data.ly_norm * maxDeviation;
-                    int rear = -data.ly_norm * maxDeviation;
-                    int left = data.lx_norm * maxDeviation;
-                    int right = -data.lx_norm * maxDeviation;
-                    
-                    move_servo_smooth(1, (45 + front + left));
-                    move_servo_smooth(3, (135 - front - right));
-                    move_servo_smooth(5, (135 - rear - left));
-                    move_servo_smooth(7, (45 + rear + right));
-                }
-                
-                if (!data.leftStickActive && !data.rightStickActive) {
-                    return_to_neutral();
-                }
+                int front = data.ry_norm * maxDeviation;
+                int rear  = -data.ry_norm * maxDeviation;
+                int left  = -data.rx_norm * maxDeviation;
+                int right = data.rx_norm * maxDeviation;
+
+                move_servo_smooth(2, 90 - h + front + left);
+                move_servo_smooth(4, 90 + h - front - right);
+                move_servo_smooth(6, 90 + h - rear - left);
+                move_servo_smooth(8, 90 - h + rear + right);
+            }
+            else if (data.r1 && data.leftStickActive) {
+                running = false;
+                int front = data.ly_norm * maxDeviation;
+                int rear  = -data.ly_norm * maxDeviation;
+                int left  = data.lx_norm * maxDeviation;
+                int right = -data.lx_norm * maxDeviation;
+
+                move_servo_smooth(1, 45 + front + left);
+                move_servo_smooth(3, 135 - front - right);
+                move_servo_smooth(5, 135 - rear - left);
+                move_servo_smooth(7, 45 + rear + right);
+            }
+            else if (data.l1 && data.leftStickActive) {
+                running = true;
+
+                if (data.ly_norm > 0.5) currentGait = CREEP_FORWARD;
+                else if (data.ly_norm < -0.5) currentGait = CREEP_BACKWARD;
+                else if (data.lx_norm > 0.5) currentGait = CREEP_RIGHT;
+                else if (data.lx_norm < -0.5) currentGait = CREEP_LEFT;
             }
             else if (data.leftStickActive) {
                 running = true;
-                if (data.l1) {
-                    if (data.ly_norm > 0.5) currentGait = CREEP_FORWARD;
-                    else if (data.ly_norm < -0.5) currentGait = CREEP_BACKWARD;
-                    else if (data.lx_norm > 0.5) currentGait = CREEP_RIGHT;
-                    else if (data.lx_norm < -0.5) currentGait = CREEP_LEFT;
-                } else {
-                    if (data.ly_norm > 0.5) currentGait = TROT_FORWARD;
-                    else if (data.ly_norm < -0.5) currentGait = TROT_BACKWARD;
-                    else if (data.lx_norm > 0.5) currentGait = TROT_RIGHT;
-                    else if (data.lx_norm < -0.5) currentGait = TROT_LEFT;
-                }
+
+                if (data.ly_norm > 0.5) currentGait = TROT_FORWARD;
+                else if (data.ly_norm < -0.5) currentGait = TROT_BACKWARD;
+                else if (data.lx_norm > 0.5) currentGait = TROT_RIGHT;
+                else if (data.lx_norm < -0.5) currentGait = TROT_LEFT;
             }
             else if (data.rightStickActive) {
                 running = true;
+
                 if (data.rx_norm > 0.5) currentGait = TROT_MOVE_RIGHT;
                 else if (data.rx_norm < -0.5) currentGait = TROT_MOVE_LEFT;
             }
             else if (data.up) {
                 h += 2;
-                return_to_neutral();
                 if (h > 50) h = 50;
+                return_to_neutral();
                 Serial.print(h);
             }
             else if (data.down) {
                 h -= 2;
+                if (h < -50) h = -50;
                 return_to_neutral();
-                if (h < 0) h = 0;
                 Serial.print(h);
             }
             else {
@@ -290,12 +274,31 @@ void process_PS4_input() {
                 gait_phase = 0.0;
                 return_to_neutral();
             }
-            break;        
+            break;
+               
         case MODE_TRIANGLE:
-            processTriangleSubModes(data);
+            if (data.l1) {
+                if (data.left)      frontSteps();
+                else if (data.right) playDead();
+                else if (data.up)    hello();
+                else if (data.down)  dive();
+            }
+            else if (data.r1) {
+                if (data.left)      twoLegUp();
+                else if (data.right) twoLegMove();
+                else if (data.up)    bounce();
+                else if (data.down)  sayNo();
+            }
+            else {
+                if (data.left)      left();
+                else if (data.right) right();
+                else if (data.up)    front();
+                else if (data.down)  back();
+            }
             break;
 
         case MODE_SQUARE:
+            processSquareMode(data);
             break;
 
         case MODE_CROSS:
@@ -326,12 +329,26 @@ void processButtons() {
         Serial.printf("Circle mode");
     }
     
-    // Obsługa zmiany podtrybów w trybie TRIANGLE
     if (currentMode == MODE_TRIANGLE) {
-        if (PS4.R1() && !PS4.L1()) { // Tylko R1 wciśnięte
-            handleTriangleSubModeChange(true); // Zmiana w prawo
-        } else if (PS4.L1() && !PS4.R1()) { // Tylko L1 wciśnięte
-            handleTriangleSubModeChange(false); // Zmiana w lewo
+        static bool r1WasPressed = false;
+        if (PS4.R1() && !r1WasPressed) {
+            triangleSubMode = (TriangleSubMode)((triangleSubMode + 1) % SUBMODE_COUNT_T);
+            Serial.printf("Triangle submode: %d\n", triangleSubMode);
+            r1WasPressed = true;
+        } else if (!PS4.R1()) {
+            r1WasPressed = false;
+        }
+    }
+
+    if (currentMode == MODE_SQUARE) {
+        static bool r1WasPressed = false;
+        if (PS4.R1() && !r1WasPressed) {
+            activeleg += 2;
+            if (activeleg > 7) activeleg = 1;
+            Serial.printf("Active leg: %d\n", activeleg);
+            r1WasPressed = true;
+        } else if (!PS4.R1()) {
+            r1WasPressed = false;
         }
     }
 }
