@@ -164,7 +164,7 @@ void displayErrorScreen(const String& errorMessage) {
 }
 
 void ShowVoltage() {
-  float volt = st.ReadVoltage(1) / 10;  // Odczyt napięcia z serwa o ID 1
+  float volt = st.ReadVoltage(1);  // Odczyt napięcia z serwa o ID 1
   
   if (volt == -1) {
     displayErrorScreen("Read error");
@@ -173,7 +173,7 @@ void ShowVoltage() {
     displayErrorScreen("No servo response");
     Serial.println("Serwo nie odpowiada!");
   } else {
-    displayVoltageScreen(volt);
+    displayVoltageScreen(volt/10.0);
     
   }
 }
